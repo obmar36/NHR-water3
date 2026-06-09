@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>馬達節能監控平台 · 示範加壓站</title>
+<link rel="stylesheet" href="app/colors_and_type.css">
+<link rel="icon" href="app/assets/NHR_Logo.png">
+
+<template id="__bundler_thumbnail" data-bg-color="#08152c">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#08152c"/>
+    <g fill="none" stroke="#41a6ff" stroke-width="6">
+      <circle cx="360" cy="400" r="110"/><rect x="540" y="320" width="320" height="170" rx="18"/>
+      <line x1="140" y1="400" x2="250" y2="400"/>
+    </g>
+    <path d="M250 560 L420 470 L560 510 L760 410" fill="none" stroke="#22C55E" stroke-width="6"/>
+    <text x="600" y="700" text-anchor="middle" font-family="Poppins, sans-serif" font-size="38" font-weight="700" fill="#cfe6ff">馬達節能監控平台</text>
+  </svg>
+</template>
+
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#08152c; }
+  *, *::before, *::after { box-sizing: border-box; }
+  #root { width:100vw; height:100vh; }
+  ::selection { background: rgba(65,166,255,.4); color:#fff; }
+  .md-flow  { animation: mdFlow 1s linear infinite; }
+  @keyframes mdFlow { to { stroke-dashoffset: -30; } }
+  .md-pulse { animation: mdPulse 1.6s ease-in-out infinite; }
+  @keyframes mdPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .md-spin  { animation: mdSpin 3.4s linear infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes mdSpin { to { transform: rotate(360deg); } }
+  .bp-tabs { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .bp-tabs::-webkit-scrollbar { height: 0; display: none; }
+  ::-webkit-scrollbar { width:9px; height:9px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:#1f5b9c; border-radius:999px; border:2px solid #08152c; }
+  @media print {
+    body { background:#fff !important; }
+    body * { visibility: hidden !important; }
+    #report-doc, #report-doc * { visibility: visible !important; }
+    #report-doc { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; color: #111 !important; }
+    #report-doc * { color: #111 !important; }
+  }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="station/stationData.jsx" data-presets="env,react"></script>
+<script type="text/babel" src="station/stationData2.jsx" data-presets="env,react"></script>
+<script type="text/babel" src="schematic/MotorDiagram.jsx" data-presets="env,react"></script>
+<script type="text/babel" src="station/BlueprintBoard.jsx" data-presets="env,react"></script>
+<script type="text/babel" src="station/blueprint-ui.jsx" data-presets="env,react"></script>
+<script type="text/babel" src="station/overview-live.jsx" data-presets="env,react"></script>
+<script type="text/babel" src="station/analysis.jsx" data-presets="env,react"></script>
+<script type="text/babel" src="station/modules.jsx" data-presets="env,react"></script>
+<script type="text/babel" src="station/data-page.jsx" data-presets="env,react"></script>
+<script type="text/babel" src="station/reports.jsx" data-presets="env,react"></script>
+<script type="text/babel" data-presets="env,react">
+  function useClock() {
+    const [now, setNow] = React.useState(new Date(2026, 5, 8, 14, 32, 10));
+    React.useEffect(() => { const id = setInterval(() => setNow(n => new Date(n.getTime() + 1000)), 1000); return () => clearInterval(id); }, []);
+    const wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()];
+    const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.getMonth()];
+    const p = n => String(n).padStart(2,'0');
+    return `${wd}, ${mo} ${now.getDate()}, ${now.getFullYear()}  |  ${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+  }
+
+  function App() {
+    const BP = window.BP;
+    const [motors, setMotors] = React.useState(window.MOTORS);
+    const [selectedId, setSelectedId] = React.useState((window.MOTORS.find(m => m.status !== 'standby') || window.MOTORS[0]).id);
+    const [tab, setTab] = React.useState(new URLSearchParams(window.location.search).get('tab') || 'overview');
+    const [mode, setMode] = React.useState(window.__INIT_MODE__ || 'actual');
+    // 「實際/模擬」鈕：實際→真實庫(4個月)、模擬→示範庫(兩年)。以重新載入帶 ?dataset 參數切換。
+    const switchMode = (m) => {
+      const u = new URL(window.location.href);
+      u.searchParams.set('dataset', m === 'sim' ? 'demo' : 'real');
+      u.searchParams.set('tab', tab);   // 保留目前所在頁籤，切換後不跳回首頁
+      window.location.href = u.toString();
+    };
+    const clock = useClock();
+    const summary = window.stationSummary(motors);
+    const selected = motors.find(m => m.id === selectedId) || motors[0];
+    const vp = window.useVP ? window.useVP() : { isMobile:false };
+    const TAB_ORDER = ['overview','analysis','data','reports','ai','alerts','access'];
+    const touchRef = React.useRef({ x:0, y:0, t:0 });
+    const onTS = (e) => { const t = e.touches[0]; touchRef.current = { x:t.clientX, y:t.clientY, t:Date.now() }; };
+    const onTE = (e) => {
+      const c = e.changedTouches[0]; const dx = c.clientX - touchRef.current.x; const dy = c.clientY - touchRef.current.y;
+      if (Math.abs(dx) > 72 && Math.abs(dx) > Math.abs(dy) * 1.7 && (Date.now() - touchRef.current.t) < 650) {
+        const i = TAB_ORDER.indexOf(tab);
+        if (dx < 0 && i < TAB_ORDER.length - 1) setTab(TAB_ORDER[i + 1]);
+        else if (dx > 0 && i > 0) setTab(TAB_ORDER[i - 1]);
+      }
+    };
+
+    const addMotor = () => {
+      setMotors(ms => {
+        const n = ms.length + 1;
+        const nm = window.newMotorTemplate(n);
+        setSelectedId(nm.id);
+        return [...ms, nm];
+      });
+    };
+    const removeMotor = (id) => {
+      setMotors(ms => {
+        if (ms.length <= 1) return ms;
+        const next = ms.filter(m => m.id !== id);
+        if (id === selectedId) setSelectedId(next[0].id);
+        return next;
+      });
+    };
+    const handleApply = (g) => {
+      if (!g) return;
+      if (g.cfg) {
+        setMotors(ms => window.applyConfig(ms, g.cfg));
+        const firstFid = Object.keys(g.cfg)[0];
+        const first = window.MOTORS.find(m => m.fid === firstFid);
+        if (first) setSelectedId(first.id);
+        return;
+      }
+      if (!g.rec) return;
+      setMotors(ms => ms.map(m => m.id === g.dev ? window.applyFreq(m, g.rec) : m));
+      setSelectedId(g.dev);
+    };
+    // operator confirms physical adjustments done → reflect only the checked changes
+    const handleAdjustments = (changes) => {
+      if (!changes || !changes.length) return;
+      setMotors(ms => {
+        let next = ms;
+        changes.forEach(c => { next = next.map(m => m.fid === c.fid ? window.applyFreq(m, c.hz) : m); });
+        return next;
+      });
+    };
+
+    // proactive prompt state (hoisted so it survives tab navigation)
+    const promptItems = React.useMemo(() => window.GUIDANCE.filter(g => g.status === '待處理' && g.save > 0), []);
+    const [promptIdx, setPromptIdx] = React.useState(0);
+    const [promptOpen, setPromptOpen] = React.useState(false);
+    const [promptApplied, setPromptApplied] = React.useState(false);
+    const reopenRef = React.useRef(null);
+    React.useEffect(() => { const t = setTimeout(() => setPromptOpen(true), 3500); return () => { clearTimeout(t); clearTimeout(reopenRef.current); }; }, []);
+    const closePrompt = () => {
+      setPromptOpen(false); setPromptApplied(false);
+      setTimeout(() => setPromptIdx(i => (i + 1) % promptItems.length), 420);
+      clearTimeout(reopenRef.current);
+      reopenRef.current = setTimeout(() => setPromptOpen(true), 26000); // gentle re-nudge
+    };
+    const applyPrompt = (g) => { handleApply(g); setPromptApplied(true); };
+
+    return (
+      <div style={{ display:'flex', flexDirection:'column', height:'100%', width:'100vw', background:'#08152c', overflow:'hidden' }}>
+        <window.BPHeader clock={clock} summary={summary} tab={tab} setTab={setTab} mode={mode} setMode={switchMode}/>
+
+        <div style={{ flex:1, minHeight:0, display:'flex', flexDirection:'column' }}
+          onTouchStart={vp.isMobile ? onTS : undefined} onTouchEnd={vp.isMobile ? onTE : undefined}>
+        {tab === 'overview' ? (
+          <div style={{ flex:1, minHeight:0, overflow:'auto', padding:vp.isMobile?8:12, display:'flex', flexDirection:'column', gap:10 }}>
+            <div style={{ flexShrink:0 }}><window.StationActionBar motors={motors} summary={summary} clock={clock} onAdjust={handleAdjustments}/></div>
+            <div style={{ flexShrink:0, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', fontSize:11, color:'#6fa8dc', background: mode==='sim'?'rgba(192,132,252,.06)':'rgba(34,211,238,.05)', border:'1px solid '+(mode==='sim'?'rgba(192,132,252,.4)':'rgba(31,91,156,.5)'), borderRadius:9, padding:'8px 13px' }}>
+              <span style={{ color:'#cfe6ff', fontWeight:600 }}>資料分層</span>
+              <window.Tier k="live"/><span>水位 / 壓力 / 各泵頻率·狀態</span>
+              <window.Tier k="model"/><span>由現場曲線推估之單泵性能</span>
+              {mode==='sim'
+                ? <><window.Tier k="sim"/><span>單泵流量 / 電表 / 軸溫 / 振動（<b style={{color:'#c084fc'}}>模擬值</b>完整呈現）</span></>
+                : <><window.Tier k="gap"/><span>單泵流量 / 電表 / 軸溫 / 振動（目前無）</span></>}
+              <span style={{ marginLeft:'auto', color:'#43689a' }}>{mode==='sim'?'模擬模式：缺口資料以模擬值補齊展示':'實際模式：僅呈現真實資料格式內之數據'}</span>
+            </div>
+            <div style={{ flexShrink:0 }}><window.BPKpiStrip summary={summary}/></div>
+            <div style={{ flexShrink:0 }}><window.LiveTrendPanel motors={motors}/></div>
+            <div style={{ flexShrink:0, display:'grid', gridTemplateColumns:vp.isMobile?'1fr':'minmax(0,1.45fr) minmax(380px,1fr)', gap:10, alignItems:'start' }}>
+              <window.BPCard title="廠區馬達系統" en="Clear Well → Distribution" glow
+                right={<span style={{ fontFamily:BP.mono, fontSize:11, color:BP.text }}>點選機組查看即時數據</span>}>
+                <div style={{ padding:12 }}>
+                  <window.BlueprintBoard motors={motors} selectedId={selectedId}
+                    onSelect={setSelectedId} onAdd={addMotor} onRemove={removeMotor}/>
+                </div>
+              </window.BPCard>
+              <div style={{ display:'flex', flexDirection:'column', gap:10, position:vp.isMobile?'static':'sticky', top:0 }}>
+                <window.BPMotorList motors={motors} selectedId={selectedId} onSelect={setSelectedId}/>
+                <window.BPMotorDetail motor={selected} mode={mode}/>
+              </div>
+            </div>
+          </div>
+        ) : tab === 'analysis' ? (
+          <div style={{ flex:1, minHeight:0, overflow:'auto' }}>
+            <window.PageAnalysis motor={selected} summary={summary} motors={motors} onAdjust={handleAdjustments} mode={mode}/>
+          </div>
+        ) : tab === 'data' ? (
+          <div style={{ flex:1, minHeight:0 }}><window.DataIntegration mode={mode}/></div>
+        ) : tab === 'reports' ? (
+          <div style={{ flex:1, minHeight:0 }}><window.ReportsPage motors={motors} summary={summary}/></div>
+        ) : tab === 'ai' ? (
+          <div style={{ flex:1, minHeight:0 }}><window.AIAssistant summary={summary}/></div>
+        ) : tab === 'alerts' ? (
+          <div style={{ flex:1, minHeight:0 }}><window.OperatorGuidance onAdjust={handleAdjustments} motors={motors}/></div>
+        ) : (
+          <div style={{ flex:1, minHeight:0 }}><window.AccessControl/></div>
+        )}
+        </div>
+        <window.ProactivePrompt items={promptItems} idx={promptIdx} open={promptOpen} applied={promptApplied}
+          onApply={applyPrompt} onGoto={setTab} onClose={closePrompt}/>
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

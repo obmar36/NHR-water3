@@ -1,0 +1,253 @@
+/* =============================================================
+   NHR CC01-A AIoT Design System — Tokens
+   All values derived from the supplied dashboard reference.
+   ============================================================= */
+
+/* Brand sans — Poppins (Latin) + Noto Sans TC (CJK). Files in /fonts. */
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/Poppins-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('fonts/Poppins-Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('fonts/Poppins-SemiBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('fonts/Poppins-SemiBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Noto Sans TC';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/NotoSansTC-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Noto Sans TC';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('fonts/NotoSansTC-Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Noto Sans TC';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('fonts/NotoSansTC-Bold.ttf') format('truetype');
+}
+
+:root {
+  /* ---------- Brand ---------- */
+  --nhr-red:        #E40613;   /* corporate mark, threat */
+  --nhr-red-600:    #C40510;
+  --nhr-red-300:    #FF4A55;
+
+  /* ---------- Surfaces (dark control-room) ---------- */
+  --bg-page:        #0B1220;   /* outermost canvas */
+  --bg-panel:       #111A2C;   /* card / panel */
+  --bg-inset:       #16213A;   /* nested block (diagnostic row) */
+  --bg-elevated:    #172238;   /* hover */
+  --bg-rail:        #0E1626;   /* left nav rail */
+  --bg-topbar:      #0A1120;
+
+  /* ---------- Borders ---------- */
+  --border-hairline:#1F2A44;
+  --border-strong:  #2A3A5C;
+  --border-focus:   #3B82F6;
+
+  /* ---------- Foreground (text) ---------- */
+  --fg-1:           #E6ECF5;   /* primary text, headings */
+  --fg-2:           #9AA7BD;   /* secondary, labels */
+  --fg-3:           #5C6A82;   /* tertiary, disabled, meta */
+  --fg-on-red:      #FFFFFF;
+
+  /* ---------- Status ---------- */
+  --status-ok:      #22C55E;
+  --status-ok-bg:   rgba(34,197,94,.18);
+  --status-warn:    #F59E0B;
+  --status-warn-bg: rgba(245,158,11,.18);
+  --status-crit:    #EF4444;
+  --status-crit-bg: rgba(239,68,68,.20);
+  --status-info:    #22D3EE;
+  --status-info-bg: rgba(34,211,238,.18);
+  --status-rec:     #22D3EE;   /* recording dot */
+
+  /* ---------- Analytics overlay fills (drawn over video) ---------- */
+  --ov-violet:      rgba(139, 92,246,.55);
+  --ov-magenta:     rgba(217, 70,239,.55);
+  --ov-lime:        rgba(132,204, 22,.55);
+  --ov-cyan:        rgba( 34,211,238,.45);
+  --ov-threat:      rgba(239, 68, 68,.35);
+
+  /* ---------- Bounding-box stroke ---------- */
+  --bbox-ok:        #22C55E;
+  --bbox-crit:      #EF4444;
+  --bbox-info:      #22D3EE;
+  --bbox-lpr:       #84CC16;
+
+  /* ---------- Type ---------- */
+  --font-sans:      'Poppins', 'Noto Sans TC', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:      'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+
+  --fs-meta:        11px;   /* timestamps, footnotes */
+  --fs-body:        13px;   /* default ui body */
+  --fs-label:       12px;   /* secondary labels */
+  --fs-panel:       14px;   /* panel header */
+  --fs-page:        16px;   /* page title in top bar */
+  --fs-stat:        18px;   /* numerical stat value */
+  --fs-stat-lg:     22px;   /* hero stats */
+
+  --lh-tight:       1.2;
+  --lh-normal:      1.4;
+
+  --fw-regular:     400;
+  --fw-medium:      500;
+  --fw-semibold:    600;
+  --fw-bold:        700;
+
+  /* ---------- Radius ---------- */
+  --radius-chip:    4px;
+  --radius-inset:   6px;
+  --radius-video:   8px;
+  --radius-card:   10px;
+  --radius-pill:   999px;
+
+  /* ---------- Spacing (8-pt grid) ---------- */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* ---------- Elevation (top inner-highlight only — no blurred shadows) ---------- */
+  --elev-card:    inset 0 1px 0 rgba(255,255,255,.04);
+  --elev-hover:   inset 0 1px 0 rgba(255,255,255,.06);
+
+  /* ---------- Motion ---------- */
+  --ease-std:    cubic-bezier(.4, 0, .2, 1);
+  --dur-fast:    80ms;
+  --dur-base:    150ms;
+  --dur-slow:    300ms;
+
+  /* ---------- Layout ---------- */
+  --rail-w:      52px;
+  --topbar-h:    44px;
+}
+
+/* ============================================================
+   Semantic primitives — use these, not raw vars, where possible
+   ============================================================ */
+
+.nhr-page {
+  background: var(--bg-page);
+  color: var(--fg-1);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+}
+
+.nhr-h1 {
+  font-size: var(--fs-page);
+  font-weight: var(--fw-bold);
+  letter-spacing: .01em;
+  color: var(--fg-1);
+  margin: 0;
+}
+.nhr-h2 {
+  font-size: var(--fs-panel);
+  font-weight: var(--fw-semibold);
+  color: var(--fg-1);
+  margin: 0;
+}
+.nhr-label {
+  font-size: var(--fs-label);
+  color: var(--fg-2);
+  font-weight: var(--fw-medium);
+}
+.nhr-meta {
+  font-size: var(--fs-meta);
+  color: var(--fg-3);
+}
+.nhr-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum' 1, 'zero' 1;
+}
+.nhr-stat {
+  font-family: var(--font-mono);
+  font-size: var(--fs-stat);
+  font-weight: var(--fw-bold);
+  color: var(--fg-1);
+}
+
+.nhr-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+  box-shadow: var(--elev-card);
+}
+.nhr-inset {
+  background: var(--bg-inset);
+  border-radius: var(--radius-inset);
+}
+
+.nhr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: var(--radius-chip);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+  background: var(--bg-inset);
+  color: var(--fg-1);
+  line-height: 1.4;
+}
+.nhr-chip--ok    { background: var(--status-ok);   color: #06210F; }
+.nhr-chip--crit  { background: var(--status-crit); color: #2A0606; }
+.nhr-chip--warn  { background: var(--status-warn); color: #2A1B06; }
+.nhr-chip--info  { background: var(--status-info); color: #062327; }
+.nhr-chip--mute  { background: var(--bg-inset);    color: var(--fg-2); }
+
+.nhr-divider { color: var(--fg-3); margin: 0 8px; }
+
+@media (max-width: 719px) {
+  html,
+  body,
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  [style*="overflow: auto"],
+  [style*="overflow:auto"],
+  [style*="overflowX"],
+  [style*="overflowY"] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
