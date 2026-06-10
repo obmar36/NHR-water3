@@ -48,7 +48,6 @@ function Axes({ BP, w, H, padL, padR, padT, padB, yMin, yMax, fmt, yTicks = 3 })
 // ---- combined: total of all running pumps + baseline ------------------------
 function CombinedLive({ motors, cfg, metric }) {
   const BP = window.BP;
-  const LIVE = window.__SIM__ ? '#c084fc' : '#22C55E';   // 模擬模式 → 即時趨勢線用紫色
   const running = motors.filter(m => m.status !== 'standby');
   const aggSec = () => { const P = running.reduce((s, m) => s + (m.power_kw || 0), 0); const Q = running.reduce((s, m) => s + (m.flow_cmd || 0), 0) || 0.001; return 24 * P / Q; };
   const targetTotal = (cfg.kind === 'sec' ? aggSec() : running.reduce((s, m) => s + (m[cfg.key] || 0), 0)) || 0.001;
@@ -90,7 +89,7 @@ function CombinedLive({ motors, cfg, metric }) {
       </div>
       <div ref={ref} style={{ marginTop: 4 }}>
         <svg viewBox={`0 0 ${w} ${H}`} width="100%" height={H} style={{ display: 'block', fontFamily: BP.mono }}>
-          <defs><linearGradient id="cl-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={LIVE} stopOpacity=".26" /><stop offset="1" stopColor={LIVE} stopOpacity=".08" /></linearGradient></defs>
+          <defs><linearGradient id="cl-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#22C55E" stopOpacity=".26" /><stop offset="1" stopColor="#22C55E" stopOpacity=".08" /></linearGradient></defs>
           <Axes BP={BP} w={w} H={H} padL={padL} padR={padR} padT={padT} padB={padB} yMin={yMin} yMax={yMax} fmt={cfg.fmt} yTicks={4} />
           {baseLine && <path d={`${lp(baseLine)} ${buf.slice().reverse().map((v, i) => `L ${X(N_LIVE - 1 - i).toFixed(1)} ${Y(v).toFixed(1)}`).join(' ')} Z`} fill="url(#cl-fill)" stroke="none" />}
           {baseLine && <text x={X(Math.round(N_LIVE * 0.3))} y={(Y(baseLine[Math.round(N_LIVE * 0.3)]) + Y(buf[Math.round(N_LIVE * 0.3)])) / 2 + 3} fontSize="9.5" fontWeight="700" fill="#22C55E">↓ 節省 {savePct != null ? savePct.toFixed(1) : '0'}%</text>}
@@ -98,8 +97,8 @@ function CombinedLive({ motors, cfg, metric }) {
             <path d={lp(baseLine)} fill="none" stroke="#F59E0B" strokeWidth="1.8" strokeDasharray="6 4" />
             <text x={X(N_LIVE - 1)} y={Y(baseLine[baseLine.length - 1]) - 5} textAnchor="end" fontSize="9" fill="#F59E0B">{cfg.baseLabel} {cfg.kind === 'sec' ? '' : cfg.fmt(baseTotal)}</text>
           </>)}
-          <path d={lp(buf)} fill="none" stroke={LIVE} strokeWidth="2.4" style={{ filter: `drop-shadow(0 0 3px ${LIVE}99)` }} />
-          <circle cx={X(N_LIVE - 1)} cy={Y(cur)} r="4" fill={LIVE} className="md-pulse" />
+          <path d={lp(buf)} fill="none" stroke="#22C55E" strokeWidth="2.4" style={{ filter: 'drop-shadow(0 0 3px rgba(34,197,94,.6))' }} />
+          <circle cx={X(N_LIVE - 1)} cy={Y(cur)} r="4" fill="#22C55E" className="md-pulse" />
         </svg>
       </div>
     </div>

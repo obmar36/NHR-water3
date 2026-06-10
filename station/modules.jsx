@@ -208,7 +208,7 @@ function AIAssistant({ summary }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, overflow: 'auto' }}>
         <window.BPCard title="本日 AI 重點" en="Daily Brief" glow>
           <div style={{ padding: 13, fontSize: 12.5, color: BP.label, lineHeight: 1.6 }}>
-            模型改善幅度 <b style={{ color: '#22C55E', fontFamily: BP.mono }}>{summary.saving_pct}%</b>（基準 {summary.se_base}→加權 {summary.se_model_after} kWh/m³），與台電帳單 5 月降幅約 10% 方向一致。夜間建議停 150HP、以 100HP 雙機承接。P3 夜間 57/60Hz <b style={{ color: '#F59E0B' }}>待廠商確認</b>。
+            模型改善幅度 <b style={{ color: '#22C55E', fontFamily: BP.mono }}>{summary.saving_pct}%</b>（基準 {summary.se_base}→加權 {summary.se_model_after} kWh/m³），與台電帳單 5 月降幅約 10% 方向一致。夜間建議停 150HP、以 100HP 雙機承接。P1 夜間 57/60Hz <b style={{ color: '#F59E0B' }}>待廠商確認</b>。
           </div>
         </window.BPCard>
         <window.BPCard title="可查詢的資料來源" en="Knowledge Base">

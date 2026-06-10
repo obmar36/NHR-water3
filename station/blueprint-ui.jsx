@@ -92,7 +92,7 @@ function BPHeader({ clock, summary, tab, setTab, mode, setMode }) {
   const vp = window.useVP ? window.useVP() : { isMobile: false, isTablet: false };
   const dot = (c) => <span style={{ width: 6, height: 6, borderRadius: 999, background: c, boxShadow: `0 0 6px ${c}`, display: 'inline-block' }} />;
   const modeToggle = (
-    <div title="切換資料來源：實際＝真實庫(近4個月)、單泵缺口標紅；模擬＝示範庫(兩年模擬)、單泵以模擬值呈現。切換時畫面會重新載入一下。" style={{ display: 'inline-flex', gap: 2, background: 'rgba(8,21,44,.7)', border: `1px solid ${mode === 'sim' ? '#c084fc' : BP.borderDim}`, borderRadius: 8, padding: 2, flexShrink: 0 }}>
+    <div title="切換展示模式：實際＝僅真實資料、缺口標紅；模擬＝缺口以模擬值完整呈現" style={{ display: 'inline-flex', gap: 2, background: 'rgba(8,21,44,.7)', border: `1px solid ${mode === 'sim' ? '#c084fc' : BP.borderDim}`, borderRadius: 8, padding: 2, flexShrink: 0 }}>
       {[['actual', '實際'], ['sim', '模擬']].map(([k, lbl]) => (
         <button key={k} onClick={() => setMode && setMode(k)} style={{
           all: 'unset', cursor: 'pointer', padding: vp.isMobile ? '7px 13px' : '5px 12px', borderRadius: 6, fontSize: vp.isMobile ? 12 : 11.5, fontWeight: 700, fontFamily: BP.mono,
@@ -375,10 +375,10 @@ function BPMotorDetail({ motor, mode }) {
   );
 }
 function roleRationale(m) {
-  if (m.fid === 'P1_150HP') return '現場較出廠衰退 −2,539 CMD，已列備用（P1）；日間高流量改以效率較佳的 P2@55Hz 取代，避免動用 P1。';
-  if (m.fid === 'P2_150HP') return '150HP 兩台中效率較佳者（P2），作日間保底 55Hz。需求跨過 2,600 CMD 時 150HP 優先選 P2；45Hz 以下效率極低，勿作低流量調速主機。';
-  if (m.fid === 'P3_100HP') return '100HP 現場健康（+128 CMD），峰值效率約 70.2% @57Hz，作夜間主底與全天主力（P3）。夜間 57/60Hz 待廠商確認後定版。';
-  if (m.fid === 'P4_100HP') return '100HP 現場健康（+181 CMD），低流量區效率最佳（約 70.3% @48Hz），作夜間輔助 51Hz（P4）、依配水池水位投入。';
+  if (m.fid === 'P1_150HP') return '現場較出廠衰退 −2,539 CMD，已列備用（P4）；日間高流量改以效率較佳的 P3@55Hz 取代，避免動用 P4。';
+  if (m.fid === 'P2_150HP') return '150HP 兩台中效率較佳者（P3），作日間保底 55Hz。需求跨過 2,600 CMD 時 150HP 優先選 P3；45Hz 以下效率極低，勿作低流量調速主機。';
+  if (m.fid === 'P3_100HP') return '100HP 現場健康（+128 CMD），峰值效率約 70.2% @57Hz，作夜間主底與全天主力（P1）。夜間 57/60Hz 待廠商確認後定版。';
+  if (m.fid === 'P4_100HP') return '100HP 現場健康（+181 CMD），低流量區效率最佳（約 70.3% @48Hz），作夜間輔助 51Hz（P2）、依配水池水位投入。';
   return '依現場曲線與選泵法則配置運轉角色。';
 }
 
@@ -441,4 +441,82 @@ function StationActionBar({ motors, summary, clock, onAdjust }) {
   );
 }
 
-Object.assign(window, { BP, BPCard, BPRow, BPStat, BPHeader, BPKpiStrip, BPMotorList, BPMotorDetail, statusZh, Tier, roleRationale, StationActionBar });
+// ---- HERO: platform core value (supply → pre/post energy → savings) --------
+function HeroCore() {
+  const vp = window.useVP ? window.useVP() : { isMobile: false };
+  const M = (window.DATA && window.DATA.monthly) || [];
+  const sum = (a, f) => a.reduce((s, x) => s + (f(x) || 0), 0);
+  const bef = M.filter(x => x.phase === '改善前'), aft = M.filter(x => x.phase === '改善後');
+  const bVol = sum(bef, x => x.flow) || 1, bSec = sum(bef, x => x.kwh_tp) / bVol;
+  const aVol = sum(aft, x => x.flow) || 1, aSec = sum(aft, x => x.kwh_tp) / aVol;
+  const CO2 = (window.DATA && window.DATA.tariff && window.DATA.tariff.co2) || 0.467;
+  const blended = (window.DATA && window.DATA.tariff) ? (window.DATA.tariff.peak * .25 + window.DATA.tariff.halfpeak * .35 + window.DATA.tariff.offpeak * .40) : 5.0;
+  const SC = { '今日': { m: 1 / 30, lab: '今日預估供水', sav: '每日可省', cu: '/日' }, '週': { m: 12 / 52, lab: '週供水量', sav: '每週可省', cu: '/週' }, '月': { m: 1, lab: '月供水量', sav: '每月可省', cu: '/月' }, '年': { m: 12, lab: '年供水量', sav: '每年可省', cu: '/年' } };
+  const [hscale, setHscale] = React.useState('年');
+  const sc = SC[hscale];
+  const Qy = Math.round(aVol * sc.m);                 // 供水量 @尺度
+  const eB = Qy * bSec, eA = Qy * aSec, save = eB - eA, pct = eB ? save / eB * 100 : 0;
+  const costY = Math.round(save * blended), co2Y = save * CO2 / 1000;
+  const big = n => n >= 100000 ? [(n / 10000).toLocaleString('en-US', { maximumFractionDigits: 1 }), '萬 '] : [Math.round(n).toLocaleString(), ''];
+  const k = n => (n / 10000).toLocaleString('en-US', { maximumFractionDigits: 1 });
+  const Icon = ({ d, c, fill }) => <svg width="26" height="26" viewBox="0 0 24 24" fill={fill ? c : 'none'} stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
+  const DROP = 'M12 2.7c0 0 6 6.4 6 10.3a6 6 0 0 1-12 0c0-3.9 6-10.3 6-10.3z';
+  const BOLT = 'M13 2 4 14h7l-1 8 9-12h-7l1-8z';
+  const LEAF = 'M11 20A7 7 0 0 1 4 13c0-5 6-9 14-9 0 8-4 14-9 14a4 4 0 0 1-4-4c5 0 8-3 8-8';
+  const SAVE = 'M3 17l6-6 4 4 7-8M21 7v5M21 7h-5';
+
+  const stage = (icon, ic, lab, val, unit, vc) => (
+    <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ width: 38, height: 38, borderRadius: 10, background: `${ic}1f`, border: `1px solid ${ic}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</span>
+        <span style={{ fontSize: 12, color: BP.text, fontWeight: 600 }}>{lab}</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+        <span style={{ fontFamily: BP.mono, fontSize: vp.isMobile ? 24 : 30, fontWeight: 800, color: vc, lineHeight: 1 }}>{val}</span>
+        <span style={{ fontSize: 11, color: BP.text }}>{unit}</span>
+      </div>
+    </div>
+  );
+  const arrow = <div style={{ flex: '0 0 auto', alignSelf: 'center', color: BP.accent, fontSize: 22, opacity: .8 }}>→</div>;
+
+  return (
+    <div style={{ flexShrink: 0, position: 'relative', borderRadius: 14, overflow: 'hidden', border: `1px solid ${BP.border}`, background: 'linear-gradient(115deg, rgba(124,212,255,.10) 0%, rgba(8,21,44,.7) 42%, rgba(34,197,94,.10) 100%)', boxShadow: 'inset 0 1px 0 rgba(124,212,255,.12)' }}>
+      <div style={{ display: 'flex', flexDirection: vp.isMobile ? 'column' : 'row', alignItems: vp.isMobile ? 'flex-start' : 'stretch', gap: vp.isMobile ? 14 : 22, padding: vp.isMobile ? '16px 16px' : '18px 22px' }}>
+        {/* left: headline */}
+        <div style={{ flex: '0 0 auto', maxWidth: vp.isMobile ? '100%' : 236, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: BP.mono, fontSize: 10.5, fontWeight: 700, color: BP.accent, letterSpacing: 1.2 }}>
+            <span style={{ width: 7, height: 7, borderRadius: 999, background: '#22C55E', boxShadow: '0 0 7px #22C55E' }} className="md-pulse" />平台核心 · CORE VALUE
+          </div>
+          <div style={{ fontSize: vp.isMobile ? 21 : 25, fontWeight: 800, color: BP.label, lineHeight: 1.25, marginTop: 9 }}>同樣供水量，<span style={{ color: '#22C55E' }}>更省電</span></div>
+          <div style={{ fontSize: 12, color: BP.text, marginTop: 7, lineHeight: 1.55 }}>結合泵浦效率曲線，找最節能運轉點，以實際帳單驗證省電。</div>
+          <div style={{ display: 'inline-flex', gap: 2, marginTop: 11, background: 'rgba(8,21,44,.6)', borderRadius: 7, padding: 2, border: `1px solid ${BP.borderDim}`, alignSelf: 'flex-start' }}>
+            {['今日', '週', '月', '年'].map(s => <button key={s} onClick={() => setHscale(s)} style={{ all: 'unset', cursor: 'pointer', padding: '4px 11px', borderRadius: 5, fontFamily: BP.mono, fontSize: 11.5, fontWeight: 700, color: hscale === s ? '#06223f' : BP.text, background: hscale === s ? BP.accent : 'transparent' }}>{s}</button>)}
+          </div>
+        </div>
+
+        {/* right: flow drop → pre → post → save */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'stretch', gap: vp.isMobile ? 10 : 14, background: 'rgba(6,18,38,.5)', border: `1px solid ${BP.borderDim}`, borderRadius: 12, padding: vp.isMobile ? '12px 13px' : '14px 18px', flexWrap: vp.isMobile ? 'wrap' : 'nowrap' }}>
+          {stage(<Icon d={DROP} c={BP.accent} />, BP.accent, sc.lab, big(Qy)[0], big(Qy)[1] + 'm³', BP.label)}
+          {arrow}
+          {stage(<Icon d={BOLT} c="#ef6461" />, '#ef6461', '優化前用電', big(eB)[0], big(eB)[1] + 'kWh', '#ef6461')}
+          {arrow}
+          {stage(<Icon d={LEAF} c="#22C55E" />, '#22C55E', '優化後用電', big(eA)[0], big(eA)[1] + 'kWh', '#22C55E')}
+          {/* equals → savings highlight */}
+          <div style={{ flex: '0 0 auto', alignSelf: 'center', color: BP.textDim, fontSize: 20, fontWeight: 700 }}>=</div>
+          <div style={{ flex: '1 1 0', minWidth: vp.isMobile ? '100%' : 150, alignSelf: 'stretch', borderRadius: 11, background: 'rgba(34,197,94,.13)', border: '1px solid rgba(34,197,94,.45)', padding: '10px 13px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}><Icon d={SAVE} c="#22C55E" /><span style={{ fontSize: 11.5, color: '#9ff0c2', fontWeight: 700 }}>{sc.sav}</span></div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginTop: 5, flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: BP.mono, fontSize: vp.isMobile ? 26 : 32, fontWeight: 800, color: '#22C55E', lineHeight: 1 }}>{pct.toFixed(1)}%</span>
+              <span style={{ fontFamily: BP.mono, fontSize: 13, fontWeight: 700, color: '#22C55E' }}>≈ {big(save)[0]} {big(save)[1]}kWh</span>
+            </div>
+            <div style={{ fontFamily: BP.mono, fontSize: 11, color: BP.text, marginTop: 4 }}>省 ${big(costY)[0]} {big(costY)[1]}元{sc.cu} · 減碳 {co2Y.toFixed(co2Y < 10 ? 1 : 0)} 噸</div>
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: vp.isMobile ? '0 16px 11px' : '0 22px 11px', fontSize: 10, color: BP.textDim, fontFamily: BP.mono }}>※ 以台電帳單口徑：單位電耗 {bSec.toFixed(3)} → {aSec.toFixed(3)} kWh/m³（−{pct.toFixed(1)}%）；年供水以改善後月均 ×12 估算。</div>
+    </div>
+  );
+}
+
+
+Object.assign(window, { BP, BPCard, BPRow, BPStat, BPHeader, BPKpiStrip, BPMotorList, BPMotorDetail, statusZh, Tier, roleRationale, StationActionBar, HeroCore });

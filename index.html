@@ -74,15 +74,8 @@
     const BP = window.BP;
     const [motors, setMotors] = React.useState(window.MOTORS);
     const [selectedId, setSelectedId] = React.useState((window.MOTORS.find(m => m.status !== 'standby') || window.MOTORS[0]).id);
-    const [tab, setTab] = React.useState(new URLSearchParams(window.location.search).get('tab') || 'overview');
-    const [mode, setMode] = React.useState(window.__INIT_MODE__ || 'actual');
-    // 「實際/模擬」鈕：實際→真實庫(4個月)、模擬→示範庫(兩年)。以重新載入帶 ?dataset 參數切換。
-    const switchMode = (m) => {
-      const u = new URL(window.location.href);
-      u.searchParams.set('dataset', m === 'sim' ? 'demo' : 'real');
-      u.searchParams.set('tab', tab);   // 保留目前所在頁籤，切換後不跳回首頁
-      window.location.href = u.toString();
-    };
+    const [tab, setTab] = React.useState('overview');
+    const [mode, setMode] = React.useState('actual');
     const clock = useClock();
     const summary = window.stationSummary(motors);
     const selected = motors.find(m => m.id === selectedId) || motors[0];
@@ -155,12 +148,13 @@
 
     return (
       <div style={{ display:'flex', flexDirection:'column', height:'100%', width:'100vw', background:'#08152c', overflow:'hidden' }}>
-        <window.BPHeader clock={clock} summary={summary} tab={tab} setTab={setTab} mode={mode} setMode={switchMode}/>
+        <window.BPHeader clock={clock} summary={summary} tab={tab} setTab={setTab} mode={mode} setMode={setMode}/>
 
         <div style={{ flex:1, minHeight:0, display:'flex', flexDirection:'column' }}
           onTouchStart={vp.isMobile ? onTS : undefined} onTouchEnd={vp.isMobile ? onTE : undefined}>
         {tab === 'overview' ? (
           <div style={{ flex:1, minHeight:0, overflow:'auto', padding:vp.isMobile?8:12, display:'flex', flexDirection:'column', gap:10 }}>
+            <window.HeroCore/>
             <div style={{ flexShrink:0 }}><window.StationActionBar motors={motors} summary={summary} clock={clock} onAdjust={handleAdjustments}/></div>
             <div style={{ flexShrink:0, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', fontSize:11, color:'#6fa8dc', background: mode==='sim'?'rgba(192,132,252,.06)':'rgba(34,211,238,.05)', border:'1px solid '+(mode==='sim'?'rgba(192,132,252,.4)':'rgba(31,91,156,.5)'), borderRadius:9, padding:'8px 13px' }}>
               <span style={{ color:'#cfe6ff', fontWeight:600 }}>資料分層</span>
@@ -172,6 +166,7 @@
               <span style={{ marginLeft:'auto', color:'#43689a' }}>{mode==='sim'?'模擬模式：缺口資料以模擬值補齊展示':'實際模式：僅呈現真實資料格式內之數據'}</span>
             </div>
             <div style={{ flexShrink:0 }}><window.BPKpiStrip summary={summary}/></div>
+            <div style={{ flexShrink:0 }}><window.SupplyEnergyCompare/></div>
             <div style={{ flexShrink:0 }}><window.LiveTrendPanel motors={motors}/></div>
             <div style={{ flexShrink:0, display:'grid', gridTemplateColumns:vp.isMobile?'1fr':'minmax(0,1.45fr) minmax(380px,1fr)', gap:10, alignItems:'start' }}>
               <window.BPCard title="廠區馬達系統" en="Clear Well → Distribution" glow

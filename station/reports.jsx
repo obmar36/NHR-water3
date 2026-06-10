@@ -1,9 +1,9 @@
 // reports.jsx — 報表中心: 日/週/月 report export + AI analysis summary.
 
 const PERIOD_META = {
-  '日': { label: '日報表', en: 'Daily Report', hours: 24, days: 14, short: '今日' },
-  '週': { label: '週報表', en: 'Weekly Report', hours: 168, days: 56, short: '本週' },
-  '月': { label: '月報總結', en: 'Monthly Summary', hours: 720, days: 99999, short: '本月' },
+  '日': { label: '日報表', en: 'Daily Report', hours: 24, span: '2026-06-05（單日）', short: '今日' },
+  '週': { label: '週報表', en: 'Weekly Report', hours: 168, span: '2026 第 23 週（05/30–06/05）', short: '本週' },
+  '月': { label: '月報總結', en: 'Monthly Summary', hours: 720, span: '2026 年 6 月', short: '本月' },
 };
 
 function reportData(motors, summary, period) {
@@ -41,28 +41,20 @@ function ReportsPage({ motors, summary }) {
   const [period, setPeriod] = React.useState('月');
   const [stamp] = React.useState('2026-06-05 09:14');
   const meta = PERIOD_META[period];
-  const _allD = (window.dailySEC ? window.dailySEC() : []);
-  const _lastD = _allD.length ? _allD[_allD.length - 1].d : '—';
-  const _fmt = s => String(s).replace(/-/g, '/');
-  const _pdays = Math.round(meta.hours / 24);
-  const _startD = _allD.length ? _allD[Math.max(0, _allD.length - _pdays)].d : _lastD;
-  const meta_span = period === '日' ? `${_fmt(_lastD)}（單日推估）`
-    : period === '週' ? `最近 7 天（${_fmt(_startD).slice(5)}–${_fmt(_lastD).slice(5)}）`
-    : `最近 30 天 · 截至 ${_fmt(_lastD)}`;
   const d = reportData(motors, summary, period);
   const savePct = d.baseKwh ? (d.savedKwh / d.baseKwh * 100).toFixed(1) : '0';
 
-  const aiSummary = `${meta.short}全站總用電約 ${(d.totalKwh / 1000).toFixed(1)} MWh（模型推估）、出水 ${(d.waterM3 / 10000).toFixed(1)} 萬噸，平均噸水電耗 ${summary.sec.toFixed(3)} kWh/m³。以台電帳單口徑驗證：單位電耗由 4 月 0.383 降至 5 月 0.343 kWh/m³、降幅約 10%，且 5 月出水量反增。模型預測改善幅度約 ${summary.saving_pct}%（基準 ${summary.se_base}→加權 ${summary.se_model_after}），與帳單方向一致。改善策略：日間以 150HP_P2@55Hz 保底、夜間改用 100HP 雙機；P1 因現場衰退列備用。⚠ 夜間 P3 頻率 57/60Hz 待廠商確認；單泵性能為現場曲線推估，非實測。`;
+  const aiSummary = `${meta.short}全站總用電約 ${(d.totalKwh / 1000).toFixed(1)} MWh（模型推估）、出水 ${(d.waterM3 / 10000).toFixed(1)} 萬噸，平均噸水電耗 ${summary.sec.toFixed(3)} kWh/m³。以台電帳單口徑驗證：單位電耗由 4 月 0.383 降至 5 月 0.343 kWh/m³、降幅約 10%，且 5 月出水量反增。模型預測改善幅度約 ${summary.saving_pct}%（基準 ${summary.se_base}→加權 ${summary.se_model_after}），與帳單方向一致。改善策略：日間以 150HP_P3@55Hz 保底、夜間改用 100HP 雙機；P4 因現場衰退列備用。⚠ 夜間 P1 頻率 57/60Hz 待廠商確認；單泵性能為現場曲線推估，非實測。`;
   const recos = [
-    '夜間改用 100HP 雙機（P3@57＋P4@51）、停 150HP_P2：100HP 現場效率約 70% 遠高於衰退之 150HP（約 54%）。',
-    '日間高流量一律以 P2@55Hz 取代 P1@60Hz：等流量下少約 15% 輸入功率。',
+    '夜間改用 100HP 雙機（P1@57＋P2@51）、停 150HP_P3：100HP 現場效率約 70% 遠高於衰退之 150HP（約 54%）。',
+    '日間高流量一律以 P3@55Hz 取代 P4@60Hz：等流量下少約 15% 輸入功率。',
     '計費端再優化：將日間用電對齊台電半尖峰、避開 16–22 時尖峰電價（9.39 元/度）。',
     '裝設單泵電表＋流量計，可由站級驗證升級至單機劣化診斷（L3→L4）。',
   ];
 
   const doExport = (fmt) => {
     const matrix = [
-      [`${meta.label} · 示範加壓站`, meta_span],
+      [`${meta.label} · 示範加壓站`, meta.span],
       [],
       ['關鍵指標', '數值', '單位'],
       ['總用電', d.totalKwh, 'kWh'],
@@ -132,7 +124,7 @@ function ReportsPage({ motors, summary }) {
                 <div style={{ fontSize: 12, color: BP.text, marginTop: 3 }}>示範加壓站 · PS-01 · 清水池 → 配水池</div>
               </div>
               <div style={{ textAlign: 'right', fontFamily: BP.mono, fontSize: 11, color: BP.textDim }}>
-                <div>期間 {meta_span}</div>
+                <div>期間 {meta.span}</div>
                 <div>AI 彙整 {stamp}</div>
               </div>
             </div>
@@ -160,9 +152,9 @@ function ReportsPage({ motors, summary }) {
               ))}
             </div>
 
-            {/* trend chart */}
-            <SectionTitle BP={BP} t="單位電耗趨勢" e="Specific-Energy Trend" />
-            <div style={{ marginBottom: 18 }}><ReportTrend BP={BP} days={meta.days} /></div>
+            {/* trend chart (period-scoped: 日=近14天 / 週=近8週 / 月=全期間) */}
+            <SectionTitle BP={BP} t={period === '日' ? '單位電耗趨勢 · 近 14 天' : period === '週' ? '單位電耗趨勢 · 近 8 週' : '單位電耗趨勢 · 全期間'} e="Specific-Energy Trend" />
+            <div style={{ marginBottom: 18 }}><ReportTrend BP={BP} period={period} /></div>
 
             {/* energy breakdown table */}
             <SectionTitle BP={BP} t="機組能耗明細" e="Energy by Unit" />
@@ -228,27 +220,28 @@ function ReportsPage({ motors, summary }) {
   );
 }
 
-function ReportTrend({ BP, days = 99999 }) {
-  const ACC = window.__SIM__ ? '#c084fc' : BP.accent;   // 模擬模式 → 報表趨勢線用紫色
-  const d = (window.dailySEC ? window.dailySEC() : []).slice(-days);   // 依日/週/月只取最近 N 天
-  if (!d.length) return null;
-  const fmtLbl = s => (d.length <= 90 ? String(s).slice(5).replace('-', '/') : String(s).slice(0, 7).replace('-', '/'));
+function ReportTrend({ BP, period }) {
+  const all = (window.dailySEC ? window.dailySEC() : []);
+  if (!all.length) return null;
+  const N = period === '日' ? 14 : period === '週' ? 56 : all.length;
+  const d = all.slice(-N);
   const w = 620, h = 130, padL = 36, padR = 12, padT = 12, padB = 22;
   const iw = w - padL - padR, ih = h - padT - padB;
   const vals = d.map(p => p.sec);
   const lo = Math.min(...vals) * 0.97, hi = Math.max(...vals) * 1.03;
-  const X = i => padL + (i / (d.length - 1)) * iw;
+  const X = i => padL + (d.length > 1 ? (i / (d.length - 1)) * iw : iw / 2);
   const Y = v => padT + ih - ((v - lo) / (hi - lo)) * ih;
   const line = d.map((p, i) => `${i ? 'L' : 'M'} ${X(i).toFixed(1)} ${Y(p.sec).toFixed(1)}`).join(' ');
-  const ci = d.findIndex(p => p.d === '2025-05-05');
+  const ci = d.findIndex(p => p.d === '05/05' || /-05-05$/.test(p.d));
+  const lbl = (s) => (s && s.length > 5 ? s.slice(5) : s);
   return (
     <svg viewBox={`0 0 ${w} ${h}`} width="100%" style={{ display: 'block', fontFamily: BP.mono, border: `1px solid ${BP.borderDim}`, borderRadius: 8, background: 'rgba(8,21,44,.4)' }}>
       {[0, .5, 1].map((f, i) => { const y = padT + ih * (1 - f); const v = lo + (hi - lo) * f; return <g key={i}><line x1={padL} y1={y} x2={w - padR} y2={y} stroke={BP.borderDim} strokeDasharray={f === 0 ? '' : '2 4'} /><text x={padL - 5} y={y + 3} textAnchor="end" fontSize="8.5" fill={BP.text}>{v.toFixed(2)}</text></g>; })}
       {0.42 > lo && 0.42 < hi && <g><line x1={padL} y1={Y(0.42)} x2={w - padR} y2={Y(0.42)} stroke="#F59E0B" strokeDasharray="5 4" opacity=".7" /><text x={w - padR} y={Y(0.42) - 3} textAnchor="end" fontSize="8" fill="#F59E0B">0.42 退化提醒</text></g>}
       {ci > 0 && <g><line x1={X(ci)} y1={padT} x2={X(ci)} y2={padT + ih} stroke="#22C55E" strokeDasharray="4 3" /><text x={X(ci)} y={padT + 8} textAnchor="middle" fontSize="8" fill="#22C55E">5/5 優化上線</text></g>}
-      <path d={line} fill="none" stroke={ACC} strokeWidth="1.6" />
-      {[0, Math.floor(d.length / 2), d.length - 1].map((i, k) => <text key={k} x={X(i)} y={h - 7} textAnchor={k === 0 ? 'start' : k === 2 ? 'end' : 'middle'} fontSize="8.5" fill={BP.textDim}>{fmtLbl(d[i].d)}</text>)}
-      <text x={padL - 5} y={9} textAnchor="end" fontSize="8" fill={ACC}>kWh/m³</text>
+      <path d={line} fill="none" stroke={BP.accent} strokeWidth="1.6" />
+      {[0, Math.floor(d.length / 2), d.length - 1].map((i, k) => <text key={k} x={X(i)} y={h - 7} textAnchor={k === 0 ? 'start' : k === 2 ? 'end' : 'middle'} fontSize="8.5" fill={BP.textDim}>{lbl(d[i].d)}</text>)}
+      <text x={padL - 5} y={9} textAnchor="end" fontSize="8" fill={BP.accent}>kWh/m³</text>
     </svg>
   );
 }
