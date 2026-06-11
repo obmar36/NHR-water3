@@ -225,24 +225,57 @@ function ReportTrend({ BP, period }) {
   if (!all.length) return null;
   const N = period === '日' ? 14 : period === '週' ? 56 : all.length;
   const d = all.slice(-N);
-  const w = 620, h = 130, padL = 36, padR = 12, padT = 12, padB = 22;
+  const w = 620, h = 130, padL = 36, padR = 12, padT = 16, padB = 22;
   const iw = w - padL - padR, ih = h - padT - padB;
   const vals = d.map(p => p.sec);
   const lo = Math.min(...vals) * 0.97, hi = Math.max(...vals) * 1.03;
   const X = i => padL + (d.length > 1 ? (i / (d.length - 1)) * iw : iw / 2);
   const Y = v => padT + ih - ((v - lo) / (hi - lo)) * ih;
   const line = d.map((p, i) => `${i ? 'L' : 'M'} ${X(i).toFixed(1)} ${Y(p.sec).toFixed(1)}`).join(' ');
-  const ci = d.findIndex(p => p.d === '05/05' || /-05-05$/.test(p.d));
   const lbl = (s) => (s && s.length > 5 ? s.slice(5) : s);
+  // change annotations (same as analysis chart), mapped into visible window
+  const KIND = window.CHANGE_KINDS || { milestone: { zh: '里程碑', c: '#22C55E' }, ai: { zh: 'AI 建議調整', c: '#22D3EE' }, manual: { zh: '人工調整', c: '#F59E0B' } };
+  const allEv = window.loadChangeEvents ? window.loadChangeEvents() : [];
+  const evs = allEv.map(ev => ({ ...ev, i: d.findIndex(p => p.d === ev.d || lbl(p.d) === ev.d) })).filter(e => e.i >= 0).sort((a, b) => a.i - b.i);
+  const pText = (p) => (p || []).map(x => `${x.dev} ${x.from}→${x.to}${x.unit ? x.unit : ''}`).join('、');
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} width="100%" style={{ display: 'block', fontFamily: BP.mono, border: `1px solid ${BP.borderDim}`, borderRadius: 8, background: 'rgba(8,21,44,.4)' }}>
-      {[0, .5, 1].map((f, i) => { const y = padT + ih * (1 - f); const v = lo + (hi - lo) * f; return <g key={i}><line x1={padL} y1={y} x2={w - padR} y2={y} stroke={BP.borderDim} strokeDasharray={f === 0 ? '' : '2 4'} /><text x={padL - 5} y={y + 3} textAnchor="end" fontSize="8.5" fill={BP.text}>{v.toFixed(2)}</text></g>; })}
-      {0.42 > lo && 0.42 < hi && <g><line x1={padL} y1={Y(0.42)} x2={w - padR} y2={Y(0.42)} stroke="#F59E0B" strokeDasharray="5 4" opacity=".7" /><text x={w - padR} y={Y(0.42) - 3} textAnchor="end" fontSize="8" fill="#F59E0B">0.42 退化提醒</text></g>}
-      {ci > 0 && <g><line x1={X(ci)} y1={padT} x2={X(ci)} y2={padT + ih} stroke="#22C55E" strokeDasharray="4 3" /><text x={X(ci)} y={padT + 8} textAnchor="middle" fontSize="8" fill="#22C55E">5/5 優化上線</text></g>}
-      <path d={line} fill="none" stroke={BP.accent} strokeWidth="1.6" />
-      {[0, Math.floor(d.length / 2), d.length - 1].map((i, k) => <text key={k} x={X(i)} y={h - 7} textAnchor={k === 0 ? 'start' : k === 2 ? 'end' : 'middle'} fontSize="8.5" fill={BP.textDim}>{lbl(d[i].d)}</text>)}
-      <text x={padL - 5} y={9} textAnchor="end" fontSize="8" fill={BP.accent}>kWh/m³</text>
-    </svg>
+    <div>
+      <svg viewBox={`0 0 ${w} ${h}`} width="100%" style={{ display: 'block', fontFamily: BP.mono, border: `1px solid ${BP.borderDim}`, borderRadius: 8, background: 'rgba(8,21,44,.4)' }}>
+        {[0, .5, 1].map((f, i) => { const y = padT + ih * (1 - f); const v = lo + (hi - lo) * f; return <g key={i}><line x1={padL} y1={y} x2={w - padR} y2={y} stroke={BP.borderDim} strokeDasharray={f === 0 ? '' : '2 4'} /><text x={padL - 5} y={y + 3} textAnchor="end" fontSize="8.5" fill={BP.text}>{v.toFixed(2)}</text></g>; })}
+        {0.42 > lo && 0.42 < hi && <g><line x1={padL} y1={Y(0.42)} x2={w - padR} y2={Y(0.42)} stroke="#F59E0B" strokeDasharray="5 4" opacity=".7" /><text x={w - padR} y={Y(0.42) - 3} textAnchor="end" fontSize="8" fill="#F59E0B">0.42 退化提醒</text></g>}
+        <path d={line} fill="none" stroke={BP.accent} strokeWidth="1.6" />
+        {evs.map((ev, k) => {
+          const c = (KIND[ev.kind] || KIND.manual).c; const x = X(ev.i); const yv = Y(d[ev.i].sec);
+          return (
+            <g key={ev.id}>
+              <line x1={x} y1={padT + 2} x2={x} y2={padT + ih} stroke={c} strokeDasharray="4 3" opacity=".6" />
+              <circle cx={x} cy={yv} r={3} fill={c} stroke="#06223f" strokeWidth="1" />
+              <circle cx={x} cy={padT - 4} r={7} fill={c} stroke="#06223f" strokeWidth="1" />
+              <text x={x} y={padT - 1.5} textAnchor="middle" fontSize="8.5" fontWeight="700" fill="#06223f">{k + 1}</text>
+            </g>
+          );
+        })}
+        {[0, Math.floor(d.length / 2), d.length - 1].map((i, k) => <text key={k} x={X(i)} y={h - 7} textAnchor={k === 0 ? 'start' : k === 2 ? 'end' : 'middle'} fontSize="8.5" fill={BP.textDim}>{lbl(d[i].d)}</text>)}
+        <text x={padL - 5} y={9} textAnchor="end" fontSize="8" fill={BP.accent}>kWh/m³</text>
+      </svg>
+      {evs.length > 0 && (
+        <div style={{ marginTop: 7, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ fontFamily: BP.mono, fontSize: 9.5, color: BP.textDim, letterSpacing: .5 }}>期間異動標註</div>
+          {evs.map((ev, k) => {
+            const c = (KIND[ev.kind] || KIND.manual).c;
+            return (
+              <div key={ev.id} style={{ display: 'flex', alignItems: 'baseline', gap: 7, fontSize: 11, lineHeight: 1.5 }}>
+                <span style={{ width: 14, height: 14, borderRadius: 999, background: c, color: '#06223f', fontFamily: BP.mono, fontSize: 8.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, alignSelf: 'center' }}>{k + 1}</span>
+                <span style={{ fontFamily: BP.mono, fontSize: 10, color: BP.text, flexShrink: 0 }}>{ev.d}</span>
+                <span style={{ fontWeight: 700, color: BP.label, flexShrink: 0 }}>{ev.label}</span>
+                <span style={{ color: BP.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pText(ev.params) || ev.detail}{ev.sec ? ` · SEC ${ev.sec.before}→${ev.sec.after}` : ''}</span>
+                <span style={{ marginLeft: 'auto', fontFamily: BP.mono, fontSize: 9, color: c, flexShrink: 0 }}>{(KIND[ev.kind] || KIND.manual).zh}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -257,3 +290,4 @@ function SectionTitle({ BP, t, e }) {
 }
 
 window.ReportsPage = ReportsPage;
+window.ReportTrend = ReportTrend;

@@ -39,6 +39,11 @@ function AdjustChecklist({ cfg, motors, onDone, compact }) {
   const finish = () => {
     const picked = items.filter((_, i) => checked[i]);
     if (picked.length && onDone) onDone(picked.map(it => ({ fid: it.fid, hz: it.to })));
+    if (picked.length && window.addChangeEvent) {
+      const lab = picked.map(it => it.kind === 'stop' ? `停 ${it.label}` : it.kind === 'start' ? `啟 ${it.label}@${it.to}` : `${it.label}→${it.to}Hz`).join('、');
+      const params = picked.map(it => it.kind === 'stop' ? { dev: it.label, from: it.from + 'Hz', to: '停用' } : it.kind === 'start' ? { dev: it.label, from: '停用', to: it.to + 'Hz' } : { dev: it.label, from: it.from, to: it.to, unit: 'Hz' });
+      window.addChangeEvent({ kind: 'ai', label: '依建議調度調整', detail: lab, params, who: '值班員' });
+    }
     setDone({ items: picked });
   };
   const undo = () => {
@@ -75,6 +80,133 @@ function AdjustChecklist({ cfg, motors, onDone, compact }) {
   );
 }
 window.AdjustChecklist = AdjustChecklist;
+
+// ---- feedback result line (system verdict on actual data) -----------------
+function FeedbackResult({ result, compact }) {
+  const BP = window.BP;
+  const v = window.FB_VERDICT[result.verdict] || window.FB_VERDICT.pending;
+  return (
+    <div style={{ marginTop: 7, background: `${v.c}12`, border: `1px solid ${v.c}44`, borderRadius: 8, padding: '8px 11px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: BP.mono, fontSize: 11.5, fontWeight: 700, color: v.c }}>
+          <span style={{ fontSize: 12 }}>{v.ic}</span>{v.zh}
+        </span>
+        {result.secAfter != null && (
+          <span style={{ fontFamily: BP.mono, fontSize: 11, color: BP.text }}>
+            SEC <span style={{ color: BP.textDim }}>{result.secBefore}</span> → <span style={{ color: v.c, fontWeight: 700 }}>{result.secAfter}</span> kWh/m³
+            <span style={{ color: v.c, fontWeight: 700, marginLeft: 6 }}>{result.deltaPct > 0 ? '+' : ''}{result.deltaPct}%</span>
+          </span>
+        )}
+        {result.secAfter == null && <span style={{ fontFamily: BP.mono, fontSize: 11, color: BP.textDim }}>SEC 基準 {result.secBefore} · 待套用後比對</span>}
+      </div>
+      <div style={{ fontSize: 11, color: BP.text, lineHeight: 1.5, marginTop: 4 }}>{result.note}</div>
+    </div>
+  );
+}
+window.FeedbackResult = FeedbackResult;
+
+// ---- feedback box: operator reports actual / better method ------------------
+function FeedbackBox({ rec, onSubmit }) {
+  const BP = window.BP;
+  const [open, setOpen] = React.useState(false);
+  const [type, setType] = React.useState('adopt');
+  const [text, setText] = React.useState('');
+  const [submitted, setSubmitted] = React.useState(null); // entry
+  const submit = () => {
+    const result = window.evaluateFeedback(rec, type);
+    const entry = {
+      id: 'F-' + Math.floor(1000 + Math.random() * 9000), recId: rec.id, recTitle: rec.title,
+      user: '值班員', t: '剛剛', type, text: text.trim() || '（未填寫說明）', result,
+    };
+    setSubmitted(entry);
+    if (onSubmit) onSubmit(entry);
+    else { try { window.saveFeedback([entry, ...window.loadFeedback()]); } catch (e) {} }
+  };
+  if (submitted) {
+    const tt = window.FEEDBACK_TYPES.find(t => t.id === submitted.type);
+    return (
+      <div style={{ marginTop: 8, background: 'rgba(8,21,44,.4)', border: `1px solid ${BP.borderDim}`, borderRadius: 8, padding: '10px 12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontFamily: BP.mono, fontSize: 11, fontWeight: 700, color: '#22C55E' }}>✓ 已送出回饋</span>
+          <span style={{ fontFamily: BP.mono, fontSize: 10.5, color: tt.tone, background: `${tt.tone}1e`, padding: '1px 7px', borderRadius: 4 }}>{tt.label}</span>
+          <span style={{ marginLeft: 'auto', fontFamily: BP.mono, fontSize: 10, color: BP.textDim }}>{submitted.id}</span>
+        </div>
+        {submitted.text !== '（未填寫說明）' && <div style={{ fontSize: 11.5, color: BP.label, lineHeight: 1.5, marginTop: 6 }}>「{submitted.text}」</div>}
+        <window.FeedbackResult result={submitted.result} />
+        <div style={{ fontSize: 10, color: BP.textDim, marginTop: 6, fontFamily: BP.mono }}>系統將持續比對後續實際數據，自動更新此判定。</div>
+      </div>
+    );
+  }
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} style={{ all: 'unset', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 9, fontFamily: BP.mono, fontSize: 11.5, fontWeight: 600, color: BP.accent, border: `1px solid ${BP.border}`, borderRadius: 7, padding: '6px 12px' }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5h16v11H9l-4 4V5z" /><path d="M8 10h8M8 13h4" /></svg>
+        建議反饋 · 回報實際操作 / 更好的做法
+      </button>
+    );
+  }
+  return (
+    <div style={{ marginTop: 9, background: 'rgba(8,21,44,.45)', border: `1px solid ${BP.border}`, borderRadius: 8, padding: '11px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: BP.label }}>建議反饋</span>
+        <span style={{ fontSize: 10, color: BP.textDim, fontFamily: BP.mono }}>操作員回報 → 系統比對實際數據判定成效</span>
+        <button onClick={() => setOpen(false)} style={{ all: 'unset', cursor: 'pointer', marginLeft: 'auto', color: BP.text, fontSize: 14, lineHeight: 1 }}>✕</button>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 9 }}>
+        {window.FEEDBACK_TYPES.map(t => {
+          const sel = t.id === type;
+          return (
+            <button key={t.id} onClick={() => setType(t.id)} style={{ all: 'unset', cursor: 'pointer', fontFamily: BP.mono, fontSize: 11, fontWeight: 600, color: sel ? '#06223f' : t.tone, background: sel ? t.tone : `${t.tone}14`, border: `1px solid ${sel ? t.tone : BP.borderDim}`, borderRadius: 999, padding: '4px 11px' }}>{t.label}</button>
+          );
+        })}
+      </div>
+      <textarea value={text} onChange={e => setText(e.target.value)} rows={2}
+        placeholder="描述你實際的操作或更好的做法，例如：P3 改 57Hz 補水較穩、或夜間先停 P4…"
+        style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', fontSize: 12, color: BP.label, fontFamily: 'inherit', lineHeight: 1.5, background: 'rgba(8,21,44,.6)', border: `1px solid ${BP.borderDim}`, borderRadius: 7, padding: '8px 10px' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9 }}>
+        <button onClick={submit} style={{ all: 'unset', cursor: 'pointer', fontFamily: BP.mono, fontSize: 12, fontWeight: 700, color: '#06223f', background: BP.accent, borderRadius: 7, padding: '7px 16px' }}>送出回饋</button>
+        <span style={{ fontSize: 10.5, color: BP.textDim, fontFamily: BP.mono }}>送出後系統即依實際單位電耗判定是否更佳</span>
+      </div>
+    </div>
+  );
+}
+window.FeedbackBox = FeedbackBox;
+
+// ---- sidebar: feedback / effectiveness tracker -----------------------------
+function FeedbackTracker({ feedback }) {
+  const BP = window.BP;
+  const counts = { improved: 0, better_alt: 0, flat: 0, worse: 0, pending: 0 };
+  feedback.forEach(f => { counts[f.result.verdict] = (counts[f.result.verdict] || 0) + 1; });
+  const wins = counts.improved + counts.better_alt;
+  return (
+    <window.BPCard title="成效回饋追蹤" en="Feedback Loop" glow
+      right={<span style={{ fontFamily: BP.mono, fontSize: 10.5, color: '#22C55E' }}>{wins}/{feedback.length} 達更佳</span>}>
+      <div style={{ padding: '6px 0', maxHeight: 360, overflow: 'auto' }}>
+        {feedback.length === 0 && <div style={{ padding: 14, fontSize: 12, color: BP.textDim }}>尚無回饋紀錄。</div>}
+        {feedback.map((f, i) => {
+          const tt = window.FEEDBACK_TYPES.find(t => t.id === f.type) || window.FEEDBACK_TYPES[0];
+          const v = window.FB_VERDICT[f.result.verdict];
+          return (
+            <div key={f.id + i} style={{ padding: '10px 14px', borderBottom: `1px solid ${BP.borderDim}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <span style={{ width: 7, height: 7, borderRadius: 999, background: v.c, flexShrink: 0 }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: BP.label, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.recTitle}</span>
+                <span style={{ marginLeft: 'auto', fontFamily: BP.mono, fontSize: 9.5, color: tt.tone, background: `${tt.tone}1a`, padding: '1px 6px', borderRadius: 4, flexShrink: 0 }}>{tt.label}</span>
+              </div>
+              <div style={{ fontSize: 11, color: BP.text, lineHeight: 1.45, margin: '5px 0 0' }}>「{f.text}」</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: BP.mono, fontSize: 11, fontWeight: 700, color: v.c }}>{v.ic} {v.zh}</span>
+                {f.result.secAfter != null && <span style={{ fontFamily: BP.mono, fontSize: 10.5, color: BP.text }}>{f.result.secBefore}→{f.result.secAfter} <span style={{ color: v.c, fontWeight: 700 }}>{f.result.deltaPct}%</span></span>}
+                <span style={{ marginLeft: 'auto', fontFamily: BP.mono, fontSize: 9.5, color: BP.textDim }}>{f.user} · {f.t}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </window.BPCard>
+  );
+}
+window.FeedbackTracker = FeedbackTracker;
 
 // ============================================================================
 // Proactive prompt — pops up bottom-right, tells the operator what to do.
@@ -220,7 +352,7 @@ function AIAssistant({ summary }) {
         </window.BPCard>
         <window.BPCard title="安全邊界" en="Guardrail">
           <div style={{ padding: 13, fontSize: 11.5, color: BP.text, lineHeight: 1.6 }}>
-            AI 僅<b style={{ color: BP.label }}>提供建議與分析</b>，不會自動變更 PLC 或設備參數。實際調度需由具權限人員於「操作建議」確認執行。回答僅引用本站真實資料，缺口資料一律據實標示「需取得」。
+            AI 僅<b style={{ color: BP.label }}>提供建議與分析</b>，不會自動變更 PLC 或設備參數。實際調度需由具權限人員於「AI 操作建議」確認執行。回答僅引用本站真實資料，缺口資料一律據實標示「需取得」。
           </div>
         </window.BPCard>
       </div>
@@ -231,14 +363,19 @@ function AIAssistant({ summary }) {
 // ============================================================================
 // Operator Guidance (alerts + recommended actions)
 // ============================================================================
-function OperatorGuidance({ onAdjust, motors }) {
+function OperatorGuidance({ onAdjust, motors, clock }) {
   const BP = window.BP;
   const vp = window.useVP ? window.useVP() : { isMobile: false };
   const [filter, setFilter] = React.useState('all');
   const [done, setDone] = React.useState({});
-  const list = window.GUIDANCE.filter(g => filter === 'all' ? true : g.level === filter);
+  const [feedback, setFeedback] = React.useState(() => window.loadFeedback());
+  const addFeedback = (entry) => setFeedback(prev => { const next = [entry, ...prev]; window.saveFeedback(next); return next; });
+  const liveRec = window.liveDispatchRec ? window.liveDispatchRec(motors, clock) : null;
+  const baseList = window.GUIDANCE.filter(g => filter === 'all' ? true : g.level === filter);
+  const list = (liveRec && (filter === 'all' || filter === liveRec.level)) ? [liveRec, ...baseList] : baseList;
   const counts = { crit: 0, warn: 0, info: 0 };
   window.GUIDANCE.forEach(g => { if (g.status === '待處理' || g.status === '處理中') counts[g.level]++; });
+  if (liveRec && !liveRec.same) counts.info++;
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: vp.isMobile ? '1fr' : 'minmax(0,1fr) 300px', gap: 12, padding: vp.isMobile ? 10 : 14, height: '100%', minHeight: 0 }}>
@@ -251,21 +388,39 @@ function OperatorGuidance({ onAdjust, motors }) {
         {list.map(g => {
           const lv = window.GUIDE_LEVELS[g.level]; const isDone = done[g.id];
           return (
-            <window.BPCard key={g.id} style={{ flexShrink: 0, borderColor: `${lv.c}55` }}>
+            <window.BPCard key={g.id} style={{ flexShrink: 0, borderColor: g.live ? 'rgba(65,166,255,.5)' : `${lv.c}55` }}>
               <div style={{ padding: '12px 14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
                   <span style={{ fontFamily: BP.mono, fontSize: 11, fontWeight: 700, color: lv.c, background: `${lv.c}22`, padding: '2px 8px', borderRadius: 4 }}>{lv.zh}</span>
+                  {g.live && <span style={{ fontFamily: BP.mono, fontSize: 10, fontWeight: 700, color: BP.accent, background: 'rgba(65,166,255,.14)', border: `1px solid ${BP.borderDim}`, padding: '2px 7px', borderRadius: 4 }}>● 即時·來自監控總覽</span>}
                   <span style={{ fontFamily: BP.mono, fontSize: 12, fontWeight: 700, color: BP.label }}>{g.dev}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: BP.label }}>{g.title}</span>
                   <span style={{ marginLeft: 'auto', fontFamily: BP.mono, fontSize: 10.5, color: BP.text }}>{g.t} · {isDone ? '已套用' : g.status}</span>
                 </div>
+                {g.win && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 11, margin: '10px 0', padding: '9px 13px', borderRadius: 9, background: `linear-gradient(90deg, ${lv.c}22, ${lv.c}08)`, border: `1px solid ${lv.c}55`, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.04)' }}>
+                    <span style={{ width: 30, height: 30, borderRadius: 8, background: `${lv.c}26`, border: `1px solid ${lv.c}66`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: lv.c, flexShrink: 0 }}>
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                    </span>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontFamily: BP.mono, fontSize: 9, color: BP.textDim, letterSpacing: 1.2 }}>適用時段 · APPLY WINDOW</div>
+                      <div style={{ fontFamily: BP.mono, fontSize: 15, fontWeight: 700, color: BP.label, lineHeight: 1.25, marginTop: 1 }}>{g.win}</div>
+                    </div>
+                    {g.gen && (
+                      <div style={{ textAlign: 'right', flexShrink: 0, borderLeft: `1px solid ${lv.c}33`, paddingLeft: 12 }}>
+                        <div style={{ fontFamily: BP.mono, fontSize: 9, color: BP.textDim }}>建議產生</div>
+                        <div style={{ fontFamily: BP.mono, fontSize: 11.5, fontWeight: 700, color: lv.c, marginTop: 2 }}>{g.gen}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div style={{ fontSize: 12, color: BP.text, lineHeight: 1.5, margin: '8px 0' }}>{g.detail}</div>
                 {g.steps.length > 0 && (
                   <div style={{ background: 'rgba(8,21,44,.5)', border: `1px solid ${BP.borderDim}`, borderRadius: 8, padding: '9px 12px', margin: '8px 0' }}>
-                    <div style={{ fontSize: 10.5, color: BP.textDim, marginBottom: 5, fontFamily: BP.mono }}>建議操作步驟</div>
+                    <div style={{ fontSize: 10.5, color: BP.textDim, marginBottom: 5, fontFamily: BP.mono }}>建議事項</div>
                     {g.steps.map((s, i) => (
                       <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: BP.label, lineHeight: 1.5, padding: '2px 0' }}>
-                        <span style={{ fontFamily: BP.mono, color: lv.c }}>{i + 1}.</span><span>{s}</span>
+                        <span style={{ fontFamily: BP.mono, color: lv.c, lineHeight: 1.5 }}>•</span><span>{s}</span>
                       </div>
                     ))}
                   </div>
@@ -284,12 +439,14 @@ function OperatorGuidance({ onAdjust, motors }) {
                     {isDone && <span style={{ marginLeft: 'auto', fontFamily: BP.mono, fontSize: 12, color: '#22C55E' }}>✓ 已確認</span>}
                   </div>
                 )}
+                <window.FeedbackBox rec={g} onSubmit={addFeedback} />
               </div>
             </window.BPCard>
           );
         })}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, overflow: 'auto' }}>
+        <window.FeedbackTracker feedback={feedback} />
         <window.BPCard title="待處理彙總" en="Open Items" glow>
           <div style={{ padding: 13, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
             {[['嚴重', counts.crit, '#EF4444'], ['警告', counts.warn, '#F59E0B'], ['建議', counts.info, '#22D3EE']].map((c, i) => (
@@ -302,7 +459,7 @@ function OperatorGuidance({ onAdjust, motors }) {
         </window.BPCard>
         <window.BPCard title="處理流程" en="Workflow">
           <div style={{ padding: 13 }}>
-            {[['偵測', 'AI 監測即時資料、比對黃金曲線'], ['提示', '主動推播建議與操作步驟'], ['確認', '操作員 / 工程師審核'], ['執行', '降頻或巡檢，留存稽核'], ['驗證', '回看節能對比是否改善']].map((s, i) => (
+            {[['偵測', 'AI 監測即時資料、比對黃金曲線'], ['提示', '主動推播建議與操作步驟'], ['確認', '操作員 / 工程師審核'], ['執行', '降頻或巡檢，留存稽核'], ['回饋', '操作員回報實際做法、系統判定成效'], ['學習', '更佳做法納入模型優化建議']].map((s, i) => (
               <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', paddingBottom: 10 }}>
                 <span style={{ fontFamily: BP.mono, fontSize: 11, fontWeight: 700, color: '#06223f', background: BP.accent, width: 18, height: 18, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
                 <div><div style={{ fontSize: 12.5, fontWeight: 700, color: BP.label }}>{s[0]}</div><div style={{ fontSize: 11, color: BP.text }}>{s[1]}</div></div>

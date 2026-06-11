@@ -88,7 +88,7 @@ function BPIco({ name, s = 14 }) {
 }
 
 // ---- header ----------------------------------------------------------------
-function BPHeader({ clock, summary, tab, setTab, mode, setMode }) {
+function BPHeader({ clock, clockOnline, clockSyncedAt, summary, tab, setTab, mode, setMode }) {
   const vp = window.useVP ? window.useVP() : { isMobile: false, isTablet: false };
   const dot = (c) => <span style={{ width: 6, height: 6, borderRadius: 999, background: c, boxShadow: `0 0 6px ${c}`, display: 'inline-block' }} />;
   const modeToggle = (
@@ -101,11 +101,17 @@ function BPHeader({ clock, summary, tab, setTab, mode, setMode }) {
       ))}
     </div>
   );
-  const tabs = [['overview', '監控總覽'], ['analysis', '節能分析'], ['data', '資料整合'], ['reports', '報表'], ['ai', 'AI 助理'], ['alerts', '操作建議'], ['access', '權限設定']];
+  const tabs = [['overview', '監控總覽'], ['analysis', '節能分析'], ['data', '資料整合'], ['reports', '報表'], ['ai', 'AI 助理'], ['alerts', 'AI 操作建議'], ['access', '權限設定']];
+  const tabsRef = React.useRef(null);
+  React.useEffect(() => {
+    const c = tabsRef.current; if (!c) return;
+    const el = c.querySelector('[data-tab="' + tab + '"]');
+    if (el) { const target = el.offsetLeft - c.clientWidth / 2 + el.clientWidth / 2; c.scrollTo({ left: Math.max(0, target), behavior: 'smooth' }); }
+  }, [tab]);
   const tabStrip = (
-    <div className="bp-tabs" style={{ display: 'flex', gap: 3, background: 'rgba(8,21,44,.6)', border: `1px solid ${BP.borderDim}`, borderRadius: 8, padding: 3, overflowX: 'auto', minWidth: 0 }}>
+    <div ref={tabsRef} className="bp-tabs" style={{ display: 'flex', gap: 3, background: 'rgba(8,21,44,.6)', border: `1px solid ${BP.borderDim}`, borderRadius: 8, padding: 3, overflowX: 'auto', minWidth: 0 }}>
       {tabs.map(([k, lbl]) => (
-        <button key={k} onClick={() => setTab(k)} style={{
+        <button key={k} data-tab={k} onClick={() => setTab(k)} style={{
           all: 'unset', cursor: 'pointer', padding: vp.isMobile ? '8px 13px' : '6px 11px', borderRadius: 6, fontSize: vp.isMobile ? 12.5 : 11.5, fontWeight: 600,
           color: tab === k ? '#06223f' : BP.text, background: tab === k ? BP.accent : 'transparent', fontFamily: BP.mono, whiteSpace: 'nowrap', flexShrink: 0,
           display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -122,35 +128,28 @@ function BPHeader({ clock, summary, tab, setTab, mode, setMode }) {
             <div style={{ fontSize: 13, fontWeight: 700, color: BP.label, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{window.STATION.name} <span style={{ fontFamily: BP.mono, fontSize: 10, color: BP.accent }}>{window.STATION.code}</span></div>
             <div style={{ fontSize: 9.5, color: BP.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{window.STATION.section}</div>
           </div>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: BP.mono, fontSize: 9.5, color: '#22C55E', whiteSpace: 'nowrap' }}>{dot('#22C55E')} 線上</span>
+          <span title={clockOnline ? ('已與網路校時' + (clockSyncedAt ? '（' + clockSyncedAt + '）' : '')) : ('離線·使用裝置時間' + (clockSyncedAt ? '，最後校時 ' + clockSyncedAt : ''))} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: BP.mono, fontSize: 9.5, color: clockOnline ? '#22C55E' : '#F59E0B', whiteSpace: 'nowrap' }}>{dot(clockOnline ? '#22C55E' : '#F59E0B')} {clockOnline ? '已校時' : '離線'}</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{modeToggle}<div style={{ flex: 1 }}>{tabStrip}</div></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{modeToggle}<div style={{ flex: 1, position: 'relative', minWidth: 0 }}>{tabStrip}<div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 26, borderRadius: '0 8px 8px 0', background: 'linear-gradient(90deg, rgba(8,18,38,0), rgba(8,18,38,.96))', pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 3, color: BP.accent, fontSize: 13 }}>›</div></div></div>
       </div>
     );
   }
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '0 16px', height: 54, background: 'rgba(8,18,38,.85)', borderBottom: `1px solid ${BP.border}`, flexShrink: 0 }}>
-      <img src="app/assets/NHR_Logo.png" alt="NHR" style={{ height: 22 }} />
-      <div style={{ width: 1, height: 26, background: BP.borderDim }} />
-      <div style={{ minWidth: 0, flexShrink: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: BP.label, whiteSpace: 'nowrap' }}>{window.STATION.name}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 14px', height: 54, background: 'rgba(8,18,38,.85)', borderBottom: `1px solid ${BP.border}`, flexShrink: 0, overflow: 'hidden' }}>
+      <img src="app/assets/NHR_Logo.png" alt="NHR" style={{ height: 22, flexShrink: 0 }} />
+      <div style={{ width: 1, height: 26, background: BP.borderDim, flexShrink: 0 }} />
+      <div style={{ minWidth: 0, flexShrink: 0, maxWidth: vp.width < 1200 ? 150 : 240 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: BP.label, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{window.STATION.name}
           <span style={{ fontFamily: BP.mono, fontSize: 11, color: BP.accent, marginLeft: 8 }}>{window.STATION.code}</span>
         </div>
-        <div style={{ display: vp.isTablet ? 'none' : 'block', fontSize: 10.5, color: BP.text, whiteSpace: 'nowrap' }}>{window.STATION.district} · <span style={{ color: BP.accent }}>{window.STATION.section}</span></div>
+        <div style={{ display: vp.width < 1340 ? 'none' : 'block', fontSize: 10.5, color: BP.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{window.STATION.district} · <span style={{ color: BP.accent }}>{window.STATION.section}</span></div>
       </div>
-      <div style={{ marginLeft: 6, minWidth: 0, flex: 1 }}>{tabStrip}</div>
-      {!vp.isTablet && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, fontFamily: BP.mono, color: BP.text, flexShrink: 0 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>{dot('#22C55E')} OPC UA</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>{dot('#22C55E')} MQTT</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>{dot('#22D3EE')} SQL</span>
-          <span style={{ color: BP.borderDim }}>|</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#22C55E' }}>{dot('#22C55E')} 邊緣節點 線上</span>
-        </div>
-      )}
-      <span style={{ color: BP.borderDim, flexShrink: 0 }}>|</span>
+      <div style={{ marginLeft: 2, minWidth: 0, flex: 1 }}>{tabStrip}</div>
       {modeToggle}
-      <div style={{ fontFamily: BP.mono, fontSize: 12, color: BP.label, whiteSpace: 'nowrap', flexShrink: 0 }}>{clock}</div>
+      <div title={clockOnline ? ('已與網路校時' + (clockSyncedAt ? '（' + clockSyncedAt + '）' : '')) : ('離線·使用裝置時間' + (clockSyncedAt ? '，最後校時 ' + clockSyncedAt : ''))} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: BP.mono, fontSize: 9.5, color: clockOnline ? '#22C55E' : '#F59E0B' }}>{dot(clockOnline ? '#22C55E' : '#F59E0B')}{clockOnline ? '已校時' : '離線'}</span>
+        {vp.width >= 1160 && <span style={{ fontFamily: BP.mono, fontSize: 12, color: BP.label, whiteSpace: 'nowrap' }}>{vp.width < 1380 ? clock.split('|')[1] : clock}</span>}
+      </div>
     </div>
   );
 }
@@ -382,6 +381,36 @@ function roleRationale(m) {
   return '依現場曲線與選泵法則配置運轉角色。';
 }
 
+// ---- shared: current "本時段最省調度建議" (live solver, single source) -----
+window.liveDispatchRec = function (motors, clock) {
+  if (!window.solve || !window.DATA || !window.TARIFF) return null;
+  const mt = (clock || '').match(/(\d{2}):(\d{2}):/);
+  const hour = mt ? +mt[1] : 14;
+  const TOU = [
+    { k: '離峰', rate: window.TARIFF.offpeak, demand: 5000, time: '00–09' },
+    { k: '半尖峰', rate: window.TARIFF.halfpeak, demand: 10000, time: '09–16 / 22–24' },
+    { k: '尖峰', rate: window.TARIFF.peak, demand: 13300, time: '16–22' },
+  ];
+  const pIdx = hour < 9 ? 0 : (hour >= 16 && hour < 22 ? 2 : 1);
+  const per = TOU[pIdx];
+  const rec = window.solve(per.demand, false);
+  const running = motors.filter(x => x.status !== 'standby');
+  const curKW = Math.round(running.reduce((s, x) => s + x.power_kw, 0));
+  const curCfg = {}; running.forEach(x => curCfg[x.fid] = x.freq);
+  const same = Object.keys(rec.sel).length === Object.keys(curCfg).length && Object.keys(rec.sel).every(k => curCfg[k] === rec.sel[k]);
+  const recList = window.DATA.order.filter(k => rec.sel[k]).map(k => window.DATA.meta[k].label.split(' ')[1] + '@' + rec.sel[k] + 'Hz').join(' ＋ ');
+  const saveKW = Math.max(0, curKW - rec.kW);
+  const savePct = curKW ? +(saveKW / curKW * 100).toFixed(1) : 0;
+  return {
+    id: 'R-LIVE', level: 'info', dev: '本時段調度', t: per.k + '時段', status: same ? '已最佳' : '待處理', kind: 'dispatch', live: true, win: per.k + ' ' + per.time + ' 時', gen: '即時 · 隨時段更新',
+    title: '本時段最省調度建議 · ' + per.k,
+    detail: '目前為台電' + per.k + '（電價 ' + per.rate.toFixed(2) + ' 元/度，' + per.time + ' 時）。依現場曲線窮舉，最省組合為 ' + recList + '，約 ' + rec.kW.toLocaleString() + ' kW、SEC ' + rec.SE + '。' + (same ? '目前已是最佳調度，無需調整。' : '較目前運轉約可省 ' + saveKW.toLocaleString() + ' kW（約 ' + savePct + '%）。'),
+    recList, kW: rec.kW, SE: rec.SE, same, period: per.k, rate: per.rate,
+    cfg: same ? null : rec.sel, action: '—', save: savePct, savekw: saveKW,
+    steps: same ? [] : ['將各泵調整為：' + recList, '調整後確認配水池水位與母管壓力維持正常', '完成後於下方勾選，並可回報實際結果供系統比對'],
+  };
+};
+
 // ---- station action bar: status + TOU period + recommended dispatch -------
 function StationActionBar({ motors, summary, clock, onAdjust }) {
   const vp = window.useVP ? window.useVP() : { isMobile: false };
@@ -427,7 +456,10 @@ function StationActionBar({ motors, summary, clock, onAdjust }) {
       </>)}
       {/* recommendation + adjustment checklist */}
       {zone(<div>
-        <div style={{ fontSize: 10, color: BP.textDim, fontFamily: BP.mono, letterSpacing: .5 }}>本時段最省調度建議</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontSize: 10, color: BP.textDim, fontFamily: BP.mono, letterSpacing: .5 }}>本時段最省調度建議</div>
+          <span style={{ fontFamily: BP.mono, fontSize: 9, color: BP.accent, background: 'rgba(65,166,255,.12)', border: `1px solid ${BP.borderDim}`, borderRadius: 4, padding: '1px 6px' }}>同步至 AI 操作建議</span>
+        </div>
         {same ? (
           <div style={{ fontSize: 13, color: '#22C55E', fontWeight: 700, marginTop: 4 }}>✓ 目前已是最佳調度</div>
         ) : (
@@ -436,6 +468,7 @@ function StationActionBar({ motors, summary, clock, onAdjust }) {
             <window.AdjustChecklist cfg={rec.sel} motors={motors} onDone={onAdjust} compact />
           </>
         )}
+        <window.FeedbackBox rec={{ id: 'R-LIVE', title: '本時段最省調度建議 · ' + per.k, save: saveKW && curKW ? +(saveKW / curKW * 100).toFixed(1) : 0 }} />
       </div>, true)}
     </div>
   );
