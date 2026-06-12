@@ -44,10 +44,10 @@ function ReportsPage({ motors, summary }) {
   const d = reportData(motors, summary, period);
   const savePct = d.baseKwh ? (d.savedKwh / d.baseKwh * 100).toFixed(1) : '0';
 
-  const aiSummary = `${meta.short}全站總用電約 ${(d.totalKwh / 1000).toFixed(1)} MWh（模型推估）、出水 ${(d.waterM3 / 10000).toFixed(1)} 萬噸，平均噸水電耗 ${summary.sec.toFixed(3)} kWh/m³。以台電帳單口徑驗證：單位電耗由 4 月 0.383 降至 5 月 0.343 kWh/m³、降幅約 10%，且 5 月出水量反增。模型預測改善幅度約 ${summary.saving_pct}%（基準 ${summary.se_base}→加權 ${summary.se_model_after}），與帳單方向一致。改善策略：日間以 150HP_P3@55Hz 保底、夜間改用 100HP 雙機；P4 因現場衰退列備用。⚠ 夜間 P1 頻率 57/60Hz 待廠商確認；單泵性能為現場曲線推估，非實測。`;
+  const aiSummary = `${meta.short}全站總用電約 ${(d.totalKwh / 1000).toFixed(1)} MWh（模型推估）、出水 ${(d.waterM3 / 10000).toFixed(1)} 萬噸，平均噸水電耗 ${summary.sec.toFixed(3)} kWh/m³。以台電帳單口徑驗證：單位電耗由 4 月 0.383 降至 5 月 0.343 kWh/m³、降幅約 10%，且 5 月出水量反增。模型預測改善幅度約 ${summary.saving_pct}%（基準 ${summary.se_base}→加權 ${summary.se_model_after}），與帳單方向一致。改善策略：日間以 150HP_P2@55Hz 保底、夜間改用 100HP 雙機；P1 因現場衰退列備用。⚠ 夜間 P3 頻率 57/60Hz 待廠商確認；單泵性能為現場曲線推估，非實測。`;
   const recos = [
-    '夜間改用 100HP 雙機（P1@57＋P2@51）、停 150HP_P3：100HP 現場效率約 70% 遠高於衰退之 150HP（約 54%）。',
-    '日間高流量一律以 P3@55Hz 取代 P4@60Hz：等流量下少約 15% 輸入功率。',
+    '夜間改用 100HP 雙機（P3@57＋P4@51）、停 150HP_P2：100HP 現場效率約 70% 遠高於衰退之 150HP（約 54%）。',
+    '日間高流量一律以 P2@55Hz 取代 P1@60Hz：等流量下少約 15% 輸入功率。',
     '計費端再優化：將日間用電對齊台電半尖峰、避開 16–22 時尖峰電價（9.39 元/度）。',
     '裝設單泵電表＋流量計，可由站級驗證升級至單機劣化診斷（L3→L4）。',
   ];

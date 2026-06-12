@@ -14,12 +14,12 @@ const LAYERS = [
 
 const SOURCES = [
   ['300/400 流量 03/21–05/11', '示範加壓站 300/400MM 出水流量 3-5月.xls', 'raw_meter_export', 'actual', '原始檔有效僅到 05/11'],
-  ['300/400 流量 05/12–05/31', '統計計算.xlsx（4+3日出水量統計）', 'filled', 'filled', '原始匯出未隨批提供，由統計檔補值'],
+  ['300/400 流量 05/12–05/31', '統計計算.xlsx（4+3日出水量統計）', 'filled', 'filled', '統計檔補值；客戶確認差異為工程師調整，以原始檔為準（6/12）'],
   ['300/400 流量 06/01–07/10', '本站 300/400 流量 6_7月.xls', 'raw_meter_export', 'actual', '與統計檔一致，品質乾淨'],
   ['300/400 流量 03/01–03/20', '3-5月原始檔', 'raw_meter_export', 'abnormal', '03/12–03/13 累積讀值斷點，排除'],
   ['每日用電量', '統計計算.xlsx + 台電帳單', 'meter', 'actual', '03/21–29 電表起始前無值；04/01 SEC 假影剔除'],
-  ['月度用電（台電/站內）', '台電帳單、站內監控錶', 'meter', 'actual', '兩錶口徑不一致（差約 0.09），待釐清'],
-  ['4 泵現場曲線 40–60Hz', '統計計算.xlsx（現場抓取）/ 報告 p4', 'field_test', 'actual', '一次性實測，非連續監測'],
+  ['月度用電（台電/站內）', '台電帳單、站內監控錶', 'meter', 'actual', '已釐清：記錄時間不同＋總錶含其他負載；電費以台電帳單為準（6/12）'],
+  ['4 泵現場曲線 40–60Hz', '統計計算.xlsx（現場抓取）/ 報告 p4', 'field_test', 'actual', '一次性實測（依當時液位/管壓判斷）；已定版為模型基準曲線'],
   ['出廠效能曲線 150/100HP', '150HP/100HP 試車記錄 PDF', 'factory_test', 'reference', '100HP 標的設備對應待確認'],
   ['馬達效率/規格', '試車記錄 PDF 馬達特性表', 'factory_spec', 'actual', '150HP 84.3% / 100HP 84.1%'],
   ['電價 / 碳排參數', '台電官網 PDF、能源署公告', 'external_ref', 'actual', '114/10/1 電價；碳係數 0.467'],
@@ -62,6 +62,12 @@ function DataIntegration({ mode }) {
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'flex-start', gap: 10, background: 'rgba(245,158,11,.06)', border: '1px solid rgba(245,158,11,.35)', borderRadius: 9, padding: '9px 13px' }}>
         <span style={{ fontFamily: BP.mono, fontSize: 10, fontWeight: 700, color: '#F59E0B', background: 'rgba(245,158,11,.16)', borderRadius: 4, padding: '2px 7px', whiteSpace: 'nowrap', marginTop: 1 }}>資料現況</span>
         <span style={{ fontSize: 11.5, color: BP.text, lineHeight: 1.55 }}>目前所有資料皆來自<b style={{ color: BP.label }}>批次匯出檔</b>（水量計 .xls、站內監控錶、台電帳單、試車 PDF）整理而成的 Excel。<b style={{ color: '#F59E0B' }}>尚無即時 SCADA 串接</b>，故本身無法逐筆區分「即時 vs 批次」——下方結構是【資料製程成熟度】：L0/L1 為現況已具備，L2 SCADA 為規劃導入，L3 為需裝錶之缺口。</span>
+      </div>
+
+      {/* 6/12 客戶定版紀錄 */}
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'flex-start', gap: 10, background: 'rgba(34,197,94,.06)', border: '1px solid rgba(34,197,94,.35)', borderRadius: 9, padding: '9px 13px' }}>
+        <span style={{ fontFamily: BP.mono, fontSize: 10, fontWeight: 700, color: '#22C55E', background: 'rgba(34,197,94,.16)', borderRadius: 4, padding: '2px 7px', whiteSpace: 'nowrap', marginTop: 1 }}>6/12 定版</span>
+        <span style={{ fontSize: 11.5, color: BP.text, lineHeight: 1.6 }}>客戶已確認四項口徑：① <b style={{ color: BP.label }}>夜間調度</b>＝P3@57Hz 主力＋P4@51Hz 輔助，維持 8,000 CMD（水量驟降由系統判斷加載）；② <b style={{ color: BP.label }}>電費基準</b>＝台電帳單（站內錶含其他負載、記錄時間不同，僅供趨勢參考）；③ <b style={{ color: BP.label }}>流量資料</b>以原始匯出檔為準，統計檔差異為工程師調整；④ <b style={{ color: BP.label }}>現場曲線</b>定版為模型判斷啟動策略之基準（測試條件依當時液位與管壓判斷）。</span>
       </div>
 
       {/* data layers (maturity, not realtime) */}

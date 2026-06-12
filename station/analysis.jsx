@@ -83,7 +83,7 @@ function FieldCurveChart({ motor, height = 330 }) {
   );
 }
 
-// ---- crossover EFF comparison (P1/P2 or P3/P4) -----------------------------
+// ---- crossover EFF comparison (P3/P4 or P2/P1) -----------------------------
 function CrossoverChart({ ids, cross, height = 200 }) {
   const BP = BPx();
   const [ref, w] = useW(360);
@@ -189,7 +189,7 @@ function DailySECChart({ height = 200 }) {
           <select value={form.kind} onChange={e => setForm(f => ({ ...f, kind: e.target.value }))} style={{ fontSize: 11.5, fontFamily: BP.mono, color: BP.label, background: 'rgba(8,21,44,.7)', border: `1px solid ${BP.borderDim}`, borderRadius: 6, padding: '6px 8px' }}>
             <option value="manual">人工調整</option><option value="ai">AI 建議調整</option><option value="milestone">里程碑</option>
           </select>
-          <input value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} placeholder="異動標題（如 P3→55Hz）" style={{ flex: '1 1 150px', minWidth: 0, fontSize: 12, color: BP.label, fontFamily: 'inherit', background: 'rgba(8,21,44,.7)', border: `1px solid ${BP.borderDim}`, borderRadius: 6, padding: '6px 9px' }} />
+          <input value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} placeholder="異動標題（如 P2→55Hz）" style={{ flex: '1 1 150px', minWidth: 0, fontSize: 12, color: BP.label, fontFamily: 'inherit', background: 'rgba(8,21,44,.7)', border: `1px solid ${BP.borderDim}`, borderRadius: 6, padding: '6px 9px' }} />
           <input value={form.detail} onChange={e => setForm(f => ({ ...f, detail: e.target.value }))} placeholder="說明（選填）" style={{ flex: '2 1 220px', minWidth: 0, fontSize: 12, color: BP.label, fontFamily: 'inherit', background: 'rgba(8,21,44,.7)', border: `1px solid ${BP.borderDim}`, borderRadius: 6, padding: '6px 9px' }} />
           <span style={{ fontFamily: BP.mono, fontSize: 10, color: BP.textDim }}>標於 {lastD}</span>
           <button onClick={submit} style={{ all: 'unset', cursor: 'pointer', fontFamily: BP.mono, fontSize: 12, fontWeight: 700, color: '#06223f', background: BP.accent, borderRadius: 6, padding: '6px 14px' }}>新增標註</button>
@@ -305,7 +305,7 @@ function SolverPanel({ onAdjust, motors }) {
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, fontSize: 11.5, color: BP.text, cursor: 'pointer' }}>
             <span onClick={() => setAllowP1(!allowP1)} style={{ width: 36, height: 20, borderRadius: 20, background: allowP1 ? '#0e7c8a' : BP.borderDim, position: 'relative', transition: '.2s', flexShrink: 0 }}>
               <span style={{ position: 'absolute', top: 2, left: allowP1 ? 18 : 2, width: 16, height: 16, borderRadius: 999, background: '#fff', transition: '.2s' }} /></span>
-            允許啟用 150HP P4（備用·已衰退）
+            允許啟用 150HP P1（備用·已衰退）
           </label>
 
           {/* 目前實際運轉（用於對照）— 各泵頻率可選 */}
@@ -325,10 +325,10 @@ function SolverPanel({ onAdjust, motors }) {
           {/* 為什麼這樣建議 (置於左欄填補空間) */}
           {(() => {
             const reasons = [`需求約 ${demand.toLocaleString()} CMD（${tierName}層級），需 ${Object.keys(r.sel).length} 台滿足。`];
-            if (r.sel.P2_150HP && !r.sel.P1_150HP) reasons.push('需求高於 2,600 CMD，150HP 選效率較佳的 P3、不啟用已衰退的 P4。');
-            if (r.sel.P3_100HP && r.sel.P4_100HP) reasons.push('100HP 雙機分流：P1 偏高流量、P2 偏低流量，各取較佳效率點。');
-            else if (r.sel.P3_100HP) reasons.push('100HP 以 P1 為主（57Hz 附近接近峰值效率 ~70%）。');
-            else if (r.sel.P4_100HP) reasons.push('低流量區由 P2 承擔（其低頻效率最佳）。');
+            if (r.sel.P2_150HP && !r.sel.P1_150HP) reasons.push('需求高於 2,600 CMD，150HP 選效率較佳的 P2、不啟用已衰退的 P1。');
+            if (r.sel.P3_100HP && r.sel.P4_100HP) reasons.push('100HP 雙機分流：P3 偏高流量、P4 偏低流量，各取較佳效率點。');
+            else if (r.sel.P3_100HP) reasons.push('100HP 以 P3 為主（57Hz 附近接近峰值效率 ~70%）。');
+            else if (r.sel.P4_100HP) reasons.push('低流量區由 P4 承擔（其低頻效率最佳）。');
             reasons.push('各泵頻率取「滿足供水下總軸功率最低」之點，避免無效做功。');
             if (r.SE) reasons.push(`預估單位電耗 ${r.SE} kWh/m³，${r.SE < 0.40 ? '低於' : '接近'} 0.40 改善後目標。`);
             return demand > 0 ? (
@@ -386,7 +386,7 @@ function SolverPanel({ onAdjust, motors }) {
             <div style={{ fontFamily: BP.mono, fontSize: 9, color: BP.textDim, marginTop: 8 }}>條棒比例＝40–60Hz 操作範圍內之相對轉速</div>
           </div>
           {r.over && <div style={{ marginTop: 9, fontSize: 11, color: '#F59E0B', background: 'rgba(245,158,11,.08)', border: '1px solid #F59E0B', borderRadius: 8, padding: '8px 11px' }}>⚠ 需求超過機組 60Hz 總供水能力，已顯示全機上限；實務需評估增設機組。</div>}
-          {r.sel.P1_150HP && <div style={{ marginTop: 9, fontSize: 11, color: '#F59E0B', background: 'rgba(245,158,11,.08)', border: '1px solid #F59E0B', borderRadius: 8, padding: '8px 11px' }}>⚠ 此解動用備用且衰退的 P4，建議改以 P3＋100HP 滿足需求。</div>}
+          {r.sel.P1_150HP && <div style={{ marginTop: 9, fontSize: 11, color: '#F59E0B', background: 'rgba(245,158,11,.08)', border: '1px solid #F59E0B', borderRadius: 8, padding: '8px 11px' }}>⚠ 此解動用備用且衰退的 P1，建議改以 P2＋100HP 滿足需求。</div>}
 
           {/* 目前操作 vs 建議操作 */}
           {(() => {
@@ -531,14 +531,14 @@ function PageAnalysis({ motor, summary, motors, onAdjust, mode }) {
         right={<span style={{ fontFamily: BP.mono, fontSize: 10.5, color: BP.text }}>150HP@2,600 · 100HP@3,400 CMD</span>}>
         <div style={{ display: 'grid', gridTemplateColumns: vp.isMobile ? '1fr' : '1fr 1fr', gap: 12, padding: 14 }}>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: BP.label, marginBottom: 6 }}>100HP · P1 vs P2 現場效率</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: BP.label, marginBottom: 6 }}>100HP · P3 vs P4 現場效率</div>
             <CrossoverChart ids={['P3_100HP', 'P4_100HP']} cross={window.DATA.crossover['100HP']} />
-            <div style={{ fontSize: 10.5, color: BP.textDim, marginTop: 4 }}>＞3,400 CMD 選 P1；低於此值 P2 較佳</div>
+            <div style={{ fontSize: 10.5, color: BP.textDim, marginTop: 4 }}>＞3,400 CMD 選 P3；低於此值 P4 較佳</div>
           </div>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: BP.label, marginBottom: 6 }}>150HP · P3 vs P4 現場效率</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: BP.label, marginBottom: 6 }}>150HP · P2 vs P1 現場效率</div>
             <CrossoverChart ids={['P2_150HP', 'P1_150HP']} cross={window.DATA.crossover['150HP']} />
-            <div style={{ fontSize: 10.5, color: BP.textDim, marginTop: 4 }}>＞2,600 CMD 選 P3（P4 已衰退、列備用）</div>
+            <div style={{ fontSize: 10.5, color: BP.textDim, marginTop: 4 }}>＞2,600 CMD 選 P2（P1 已衰退、列備用）</div>
           </div>
         </div>
       </window.BPCard>

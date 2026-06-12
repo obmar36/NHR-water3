@@ -161,7 +161,7 @@ function FeedbackBox({ rec, onSubmit }) {
         })}
       </div>
       <textarea value={text} onChange={e => setText(e.target.value)} rows={2}
-        placeholder="描述你實際的操作或更好的做法，例如：P3 改 57Hz 補水較穩、或夜間先停 P4…"
+        placeholder="描述你實際的操作或更好的做法，例如：P2 改 57Hz 補水較穩、或夜間先停 P1…"
         style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', fontSize: 12, color: BP.label, fontFamily: 'inherit', lineHeight: 1.5, background: 'rgba(8,21,44,.6)', border: `1px solid ${BP.borderDim}`, borderRadius: 7, padding: '8px 10px' }} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9 }}>
         <button onClick={submit} style={{ all: 'unset', cursor: 'pointer', fontFamily: BP.mono, fontSize: 12, fontWeight: 700, color: '#06223f', background: BP.accent, borderRadius: 7, padding: '7px 16px' }}>送出回饋</button>
@@ -329,7 +329,7 @@ function AIAssistant({ summary }) {
         </div>
         <div style={{ display: 'flex', gap: 9, padding: '11px 14px', borderTop: `1px solid ${BP.borderDim}` }}>
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') send(); }}
-            placeholder="以中文提問，例如：夜間 P3 要用 57 還是 60Hz？" style={{
+            placeholder="以中文提問，例如：夜間 P2 要用 57 還是 60Hz？" style={{
               flex: 1, all: 'unset', fontSize: 13, color: BP.label, fontFamily: 'inherit', background: 'rgba(8,21,44,.6)',
               border: `1px solid ${BP.borderDim}`, borderRadius: 8, padding: '9px 12px',
             }} />
@@ -340,7 +340,7 @@ function AIAssistant({ summary }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0, overflow: 'auto' }}>
         <window.BPCard title="本日 AI 重點" en="Daily Brief" glow>
           <div style={{ padding: 13, fontSize: 12.5, color: BP.label, lineHeight: 1.6 }}>
-            模型改善幅度 <b style={{ color: '#22C55E', fontFamily: BP.mono }}>{summary.saving_pct}%</b>（基準 {summary.se_base}→加權 {summary.se_model_after} kWh/m³），與台電帳單 5 月降幅約 10% 方向一致。夜間建議停 150HP、以 100HP 雙機承接。P1 夜間 57/60Hz <b style={{ color: '#F59E0B' }}>待廠商確認</b>。
+            模型改善幅度 <b style={{ color: '#22C55E', fontFamily: BP.mono }}>{summary.saving_pct}%</b>（基準 {summary.se_base}→加權 {summary.se_model_after} kWh/m³），與台電帳單 5 月降幅約 10% 方向一致。夜間建議停 150HP、以 100HP 雙機承接。P3 夜間 57/60Hz <b style={{ color: '#F59E0B' }}>待廠商確認</b>。
           </div>
         </window.BPCard>
         <window.BPCard title="可查詢的資料來源" en="Knowledge Base">
