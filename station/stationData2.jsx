@@ -23,7 +23,7 @@ const GUIDANCE = [
     steps: ['日間固定用 P2（55Hz）當主力，不開已老化的 P1', '水不夠時，再加開 100HP 的 P3、P4', '水量需求超過 2,600 噸/日才考慮 150HP，且優先選 P2'],
   },
   {
-    id: 'R-P3HZ', level: 'info', dev: 'P1_100HP', t: '已定版', status: '已定版', kind: 'note', win: '夜間 22:00–06:00', gen: '6/12 定版',
+    id: 'R-P3HZ', level: 'info', dev: 'P3', t: '已定版', status: '已定版', kind: 'note', win: '夜間 22:00–06:00', gen: '6/12 定版',
     title: '夜間頻率定版 · P3 以 57Hz 為主',
     detail: '原「57 還是 60Hz」的疑義已由客戶定版：夜間 P3 以 57Hz 運作（57Hz 也是 P3 效率最好的點：每噸水 0.387 度、效率 70.2%），搭配 P4@51Hz 維持 8,000 CMD。若水量驟降或水池回升不足，由系統判斷加載建議，不再以固定 60Hz 保底。',
     action: '依定版規則執行', save: 0, savekw: 0,

@@ -141,14 +141,14 @@ function FeedbackBox({ rec, onSubmit }) {
     return (
       <button onClick={() => setOpen(true)} style={{ all: 'unset', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 9, fontFamily: BP.mono, fontSize: 11.5, fontWeight: 600, color: BP.accent, border: `1px solid ${BP.border}`, borderRadius: 7, padding: '6px 12px' }}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5h16v11H9l-4 4V5z" /><path d="M8 10h8M8 13h4" /></svg>
-        建議反饋 · 回報實際操作 / 更好的做法
+        優化分析 · 回報實際操作 / 更好的做法
       </button>
     );
   }
   return (
     <div style={{ marginTop: 9, background: 'rgba(8,21,44,.45)', border: `1px solid ${BP.border}`, borderRadius: 8, padding: '11px 12px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 11.5, fontWeight: 700, color: BP.label }}>建議反饋</span>
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: BP.label }}>優化分析</span>
         <span style={{ fontSize: 10, color: BP.textDim, fontFamily: BP.mono }}>操作員回報 → 系統比對實際數據判定成效</span>
         <button onClick={() => setOpen(false)} style={{ all: 'unset', cursor: 'pointer', marginLeft: 'auto', color: BP.text, fontSize: 14, lineHeight: 1 }}>✕</button>
       </div>
